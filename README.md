@@ -44,5 +44,8 @@ This project would not be possible without the following open-source packages:
 - [just_audio](https://github.com/ryanheise/just_audio) - A feature-rich audio player for Android, iOS, macOS, web, Linux and Windows.
 - [flutter_bloc](https://github.com/felangel/bloc) - A predictable state management library that helps implement the BLoC design pattern
 - [equatable](https://github.com/felangel/equatable) - A Dart package that helps to implement value equality without needing to explicitly override == and hashCode.
+- [path](https://github.com/dart-lang/core/tree/main/pkgs/path) - A string-based path manipulation library. All of the path operations you know and love, with solid support for Windows, POSIX (Linux and Mac OS X), and the web.
+- [path_provider](https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider) - Flutter plugin for getting commonly used locations on host platform file systems, such as the temp and app data directories
+- [permission_handler](https://github.com/baseflow/flutter-permission-handler) - Permission plugin for Flutter.
 
 Thanks to all the developers who maintain these packages.
