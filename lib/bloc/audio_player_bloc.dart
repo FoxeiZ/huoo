@@ -28,10 +28,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   AudioPlayerBloc() : super(AudioPlayerInitial()) {
     JustAudioMediaKit.ensureInitialized();
     on<AddTestSongEvent>((event, emit) async {
-      var song = await Song.testLoad(
-        id: "",
-        assetPath: "assets/audios/sample.m4a",
-      );
+      var song = await Song.fromAsset("assets/audios/sample.m4a");
       add(AudioPlayerAddSongEvent(song));
     });
     on<AudioPlayerInitializeEvent>(_onInitialize);

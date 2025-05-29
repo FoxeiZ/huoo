@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:huoo/screens/main_player.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
+import 'package:huoo/helpers/database_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper().initialize();
   runApp(const MyApp());
 }
 
