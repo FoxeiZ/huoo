@@ -25,8 +25,8 @@ jobs:
         
     - name: Get media_kit libs
       run: |
-        apt-get update
-        apt-get install libmpv-dev -y
+        sudo apt-get update
+        sudo apt-get install libmpv-dev -y
   
     - run: flutter --version
     - run: flutter pub get
