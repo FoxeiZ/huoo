@@ -23,6 +23,11 @@ jobs:
         channel: stable
         flutter-version: 3.29.3
         
+    - name: Get media_kit libs
+      run: |
+        apt-get update
+        apt-get install libmpv-dev -y
+  
     - run: flutter --version
     - run: flutter pub get
     - run: flutter pub deps
