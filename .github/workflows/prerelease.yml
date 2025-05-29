@@ -25,7 +25,8 @@ jobs:
         sdk: ^3.7.2
         
     - run: flutter --version
-    - run: flutter pub get
+    - run: flutter pub get --enforce-lockfile
+    - run: flutter pub deps
     - run: flutter test
     - run: flutter build apk --debug --split-per-abi
     
