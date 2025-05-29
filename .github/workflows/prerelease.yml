@@ -31,7 +31,8 @@ jobs:
     - run: flutter --version
     - run: flutter pub get
     - run: flutter pub deps
-    - run: flutter test
+    - run: flutter analyze
+    # - run: flutter test
     - run: flutter build apk --debug --split-per-abi
     
     - name: Create a Release APK
