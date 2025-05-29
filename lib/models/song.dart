@@ -148,6 +148,12 @@ class Song extends Equatable {
     );
     log('Song has ${metadata.pictures.length} pictures');
 
+    final songProvider = DatabaseHelper().songProvider;
+    final existingSong = await songProvider.getByPath(filePath);
+    if (existingSong != null) {
+      return existingSong;
+    }
+
     var song = Song._fromAudioMetadata(
       path: filePath,
       source: AudioSourceEnum.local,
@@ -159,8 +165,7 @@ class Song extends Equatable {
       cover: coverPath,
       dateAdded: DateTime.now(),
     );
-    await DatabaseHelper().songProvider.insert(savedSong);
-
+    await DatabaseHelper().songProvider.insertOrUpdate(savedSong);
     return savedSong;
   }
 
@@ -458,6 +463,19 @@ class SongProvider extends BaseProvider<Song> {
     } else {
       return insert(song);
     }
+  }
+
+  Future<Song?> getByPath(String path) async {
+    List<Map<String, dynamic>> maps = await db.query(
+      table,
+      where: '$columnPath = ?',
+      whereArgs: [path],
+    );
+
+    if (maps.isNotEmpty) {
+      return Song.fromMap(maps.first);
+    }
+    return null;
   }
 
   @override
