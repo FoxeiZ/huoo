@@ -25,7 +25,7 @@ class PlaylistPersistenceService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      final songsJson = songs.map((song) => song.toJson()).toList();
+      final songsJson = songs.map((song) => song.toMap()).toList();
       await prefs.setString(_playlistKey, jsonEncode(songsJson));
 
       if (currentIndex != null) {
@@ -64,9 +64,7 @@ class PlaylistPersistenceService {
       final songsData = jsonDecode(playlistJson) as List;
       final songs =
           songsData
-              .map(
-                (songData) => Song.fromJson(songData as Map<String, dynamic>),
-              )
+              .map((songData) => Song.fromMap(songData as Map<String, dynamic>))
               .toList();
 
       if (songs.isEmpty) {
