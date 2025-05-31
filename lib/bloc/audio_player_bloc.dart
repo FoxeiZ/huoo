@@ -1,16 +1,21 @@
 import 'dart:async';
-import 'dart:developer';
+import 'package:logger/logger.dart';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:huoo/services/playlist_persistence_service.dart';
 
 import 'package:huoo/models/song.dart';
 
 part 'audio_player_event.dart';
 part 'audio_player_state.dart';
+
+final log = Logger(
+  filter: ProductionFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
 
 class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   final AudioPlayer _player = AudioPlayer();
@@ -26,7 +31,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   StreamSubscription<SequenceState?>? _sequenceStateSubscription;
 
   AudioPlayerBloc() : super(AudioPlayerInitial()) {
-    JustAudioMediaKit.ensureInitialized();
     on<AddTestSongEvent>((event, emit) async {
       var song = await Song.fromAsset("assets/audios/sample.m4a");
       add(AudioPlayerAddSongEvent(song));
@@ -212,7 +216,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
                 .toList();
 
         if (audioSources.isEmpty) {
-          log('No valid audio sources from saved state, initializing empty.');
+          log.w('No valid audio sources from saved state, initializing empty.');
           _emitStateFromPlayer(emit);
           return;
         }
@@ -246,15 +250,18 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         }
 
         _emitStateFromPlayer(emit);
-        log(
+        log.d(
           'Player initialized and playlist restored. Index: $actualCurrentIndex, Song: ${currentSong?.title}',
         );
       } else {
         _emitStateFromPlayer(emit);
-        log('Player initialized. No saved playlist or playlist was empty.');
+        log.w('Player initialized. No saved playlist or playlist was empty.');
       }
     } catch (e, stackTrace) {
-      log('Error initializing player: ${e.toString()}\n$stackTrace');
+      log.e(
+        'Error initializing player: ${e.toString()}',
+        stackTrace: stackTrace,
+      );
       emit(AudioPlayerError('Failed to initialize player: ${e.toString()}'));
     }
   }
@@ -273,7 +280,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
               .toList();
 
       if (audioSources.isEmpty) {
-        log('Cannot load an empty playlist.');
+        log.w('Cannot load an empty playlist.');
         emit(
           AudioPlayerReady(
             processingState: ProcessingState.idle,
@@ -307,7 +314,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       }
 
       _emitStateFromPlayer(emit);
-      log(
+      log.d(
         'New playlist loaded. Index: ${_player.currentIndex}, Song: ${currentSong?.title}',
       );
       PlaylistPersistenceService.savePlaylistState(
@@ -319,7 +326,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         volume: _player.volume,
       );
     } catch (e, stackTrace) {
-      log('Error loading playlist: ${e.toString()}\n$stackTrace');
+      log.e('Error loading playlist: ${e.toString()}', stackTrace: stackTrace);
       emit(AudioPlayerError('Failed to load playlist: ${e.toString()}'));
     }
   }
@@ -346,15 +353,15 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           await _player.playerStateStream.firstWhere(
             (ps) => ps.processingState != ProcessingState.loading,
           );
-          log('First song added to empty playlist: ${event.song.title}');
+          log.d('First song added to empty playlist: ${event.song.title}');
         } else {
           await _player.addAudioSource(event.song.toAudioSource());
-          log('Song added to existing playlist: ${event.song.title}');
+          log.d('Song added to existing playlist: ${event.song.title}');
         }
         _emitStateFromPlayer(emit);
       }
-    } catch (e) {
-      log('Error adding song: ${e.toString()}');
+    } catch (e, stackTrace) {
+      log.e('Error adding song: ${e.toString()}', stackTrace: stackTrace);
       emit(AudioPlayerError('Failed to add song: ${e.toString()}'));
     }
   }
