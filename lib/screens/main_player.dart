@@ -126,11 +126,14 @@ class _PlayControlsSection extends StatelessWidget {
                   ),
                   onPressed: () {
                     if (state is AudioPlayerLoading) {
-                      log.e("Cannot toggle play/pause while loading");
+                      _showSnackBar(
+                        context,
+                        "Cannot toggle play/pause while loading",
+                      );
                       return;
                     }
                     if (state.playlist.isEmpty) {
-                      log.w("No songs in playlist to play");
+                      _showSnackBar(context, "No songs in playlist to play");
                       return;
                     }
                     if (state.playing) {
@@ -547,6 +550,15 @@ class _SleepTimerDialogState extends State<_SleepTimerDialog> {
 class _MainPlayerState extends State<MainPlayer> {
   bool _isFavorite = false;
 
+  Future<void> _showTimerDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _SleepTimerDialog();
+      },
+    );
+  }
+
   void _showBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -562,6 +574,12 @@ class _MainPlayerState extends State<MainPlayer> {
           maxChildSize: 0.75,
           expand: false,
           builder: (_, scrollController) {
+            var isLocal =
+                (context.read<AudioPlayerBloc>().state as AudioPlayerReady)
+                    .songMetadata
+                    ?.source ==
+                AudioSourceEnum.local;
+
             return SingleChildScrollView(
               controller: scrollController,
               child: Column(
@@ -577,30 +595,75 @@ class _MainPlayerState extends State<MainPlayer> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.playlist_add),
-                    title: const Text('Add to playlist'),
+                    title: const Text('Add To Playlist'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.favorite_border),
-                    title: const Text('Add to favorites'),
+                    leading: const Icon(Icons.add_circle_outline),
+                    title: const Text('Add To Queue'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.share),
-                    title: const Text('Share'),
+                    leading: const Icon(Icons.clear_all),
+                    title: const Text('Clear Queue'),
+                    onTap: () {
+                      context.read<AudioPlayerBloc>().add(
+                        AudioPlayerClearPlaylistEvent(),
+                      );
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.album),
+                    title: const Text('View Album'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.download),
-                    title: const Text('Download'),
+                    leading: const Icon(Icons.person_pin),
+                    title: const Text('View Artist'),
                     onTap: () {
                       Navigator.pop(context);
+                    },
+                  ),
+                  // Conditional options based on song source
+                  if (isLocal) ...[
+                    ListTile(
+                      leading: const Icon(
+                        Icons.drive_file_rename_outline_sharp,
+                      ),
+                      title: const Text('Modify tags'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ] else ...[
+                    ListTile(
+                      leading: const Icon(Icons.cloud_download),
+                      title: const Text('Download song'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.share),
+                      title: const Text('Share'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                  ListTile(
+                    leading: const Icon(Icons.timer),
+                    title: const Text('Sleep Timer'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _showTimerDialog(context);
                     },
                   ),
                   ListTile(
@@ -608,6 +671,7 @@ class _MainPlayerState extends State<MainPlayer> {
                     title: const Text('Load test song'),
                     onTap: () {
                       context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                      _showSnackBar(context, "Test song loaded");
                     },
                   ),
                 ],
