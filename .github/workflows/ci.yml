@@ -40,11 +40,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Get media_kit libs
-      run: |
-        sudo apt-get update
-        sudo apt-get install libmpv-dev -y
-
     - name: Get dependencies
       run: flutter pub get
 
