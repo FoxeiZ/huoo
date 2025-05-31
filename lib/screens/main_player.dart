@@ -1,9 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
 
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/widgets/audio/seekbar.dart';
+
+final log = Logger(
+  filter: ProductionFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
+
+void _showSnackBar(BuildContext context, String message) {
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context)
+    ..removeCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: "Dismiss",
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+        // showCloseIcon: true,
+      ),
+    );
+}
 
 class MainPlayer extends StatefulWidget {
   final Song? song;
@@ -340,6 +367,183 @@ class _SongTextInfoSection extends StatelessWidget {
   }
 }
 
+// Sleep Timer Dialog widget with duration selection capabilities
+class _SleepTimerDialog extends StatefulWidget {
+  @override
+  State<_SleepTimerDialog> createState() => _SleepTimerDialogState();
+}
+
+class _SleepTimerDialogState extends State<_SleepTimerDialog> {
+  // Timer duration in minutes (10 min to 5 hours = 300 minutes)
+  double _timerMinutes = 30.0;
+  static const double _minMinutes = 10.0;
+  static const double _maxMinutes = 300.0; // 5 hours
+  final TextEditingController _textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize text controller with default duration
+    _updateTextController();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _updateTextController() {
+    final hours = (_timerMinutes / 60).floor();
+    final minutes = (_timerMinutes % 60).round();
+
+    if (hours > 0) {
+      _textController.text = '${hours}h ${minutes}m';
+    } else {
+      _textController.text = '${minutes}m';
+    }
+  }
+
+  // manually input time
+  void _showTimeInputDialog() {
+    final inputController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Enter Duration'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Enter duration in minutes (10-300):'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: inputController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Minutes',
+                    border: OutlineInputBorder(),
+                    suffixText: 'min',
+                  ),
+                  autofocus: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final input = double.tryParse(inputController.text);
+                  if (input != null) {
+                    final normalizedMinutes = input.clamp(
+                      _minMinutes,
+                      _maxMinutes,
+                    );
+                    setState(() {
+                      _timerMinutes = normalizedMinutes;
+                      _updateTextController();
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Set'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Sleep Timer'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // tap-able text field
+          GestureDetector(
+            onTap: _showTimeInputDialog,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _textController.text,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.edit, size: 16),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // slider
+          Column(
+            children: [
+              Text(
+                'Adjust Duration',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Slider(
+                value: _timerMinutes,
+                min: _minMinutes,
+                max: _maxMinutes,
+                divisions: 58, // 10min steps approximately
+                onChanged: (value) {
+                  setState(() {
+                    _timerMinutes = value;
+                    _updateTextController();
+                  });
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${_minMinutes.round()}m'),
+                  Text('${(_maxMinutes / 60).round()}h'),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Implement actual timer functionality
+            log.i('Sleep timer set for ${_timerMinutes.round()} minutes');
+            _showSnackBar(
+              context,
+              'Sleep timer set for ${_textController.text}',
+            );
+            Navigator.pop(context);
+          },
+          child: const Text('Start Timer'),
+        ),
+      ],
+    );
+  }
+}
+
 class _MainPlayerState extends State<MainPlayer> {
   bool _isFavorite = false;
 
@@ -353,7 +557,7 @@ class _MainPlayerState extends State<MainPlayer> {
       ),
       builder: (_) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.4,
+          initialChildSize: 0.5,
           minChildSize: 0.2,
           maxChildSize: 0.75,
           expand: false,
