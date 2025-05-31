@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -73,7 +71,7 @@ class _PlayControlsSection extends StatelessWidget {
                           context.read<AudioPlayerBloc>().add(
                             AudioPlayerPreviousTrackEvent(),
                           );
-                          log("Previous song");
+                          log.i("Previous song");
                         }
                         : null,
               ),
@@ -101,23 +99,23 @@ class _PlayControlsSection extends StatelessWidget {
                   ),
                   onPressed: () {
                     if (state is AudioPlayerLoading) {
-                      log("Cannot toggle play/pause while loading");
+                      log.e("Cannot toggle play/pause while loading");
                       return;
                     }
                     if (state.playlist.isEmpty) {
-                      log("No songs in playlist to play");
+                      log.w("No songs in playlist to play");
                       return;
                     }
                     if (state.playing) {
                       context.read<AudioPlayerBloc>().add(
                         AudioPlayerPauseEvent(),
                       );
-                      log("Pausing audio");
+                      log.i("Pausing audio");
                     } else {
                       context.read<AudioPlayerBloc>().add(
                         AudioPlayerPlayEvent(),
                       );
-                      log("Playing audio");
+                      log.i("Playing audio");
                     }
                   },
                 ),
@@ -133,7 +131,7 @@ class _PlayControlsSection extends StatelessWidget {
                           context.read<AudioPlayerBloc>().add(
                             AudioPlayerNextTrackEvent(),
                           );
-                          log("Next song");
+                          log.i("Next song");
                         }
                         : null,
               ),
@@ -228,7 +226,7 @@ class _AlbumArtSection extends StatelessWidget {
               height: imageSize,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                log("Error loading image: $error");
+                log.e("Error loading image: $error", stackTrace: stackTrace);
                 return Container(
                   width: imageSize,
                   height: imageSize,
@@ -311,7 +309,7 @@ class _SongTextInfoSection extends StatelessWidget {
                       IconButton(
                         constraints: const BoxConstraints(),
                         onPressed: () {
-                          log("Share button pressed");
+                          log.i("Share button pressed");
                         },
                         icon: const Icon(Icons.share),
                         iconSize: 20,
@@ -327,7 +325,7 @@ class _SongTextInfoSection extends StatelessWidget {
                         ),
                         onPressed: () {
                           onFavoriteChanged(!isFavorite);
-                          log("Favorite button pressed");
+                          log.i("Favorite button pressed");
                         },
                       ),
                     ],
