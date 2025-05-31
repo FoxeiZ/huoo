@@ -64,7 +64,11 @@ class SignIn extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Image(image: images.AssetImage('assets/images/google.png'), width: 24.0, height: 24.0,),
+                        Image(
+                          image: images.AssetImage('assets/images/google.png'),
+                          width: 24.0,
+                          height: 24.0,
+                        ),
                         SizedBox(width: 10.0),
                         Text("Continue with Google"),
                       ],
@@ -88,7 +92,11 @@ class SignIn extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Image(image: images.AssetImage('assets/images/fb.png'), width: 24.0, height: 24.0,),
+                        Image(
+                          image: images.AssetImage('assets/images/fb.png'),
+                          width: 24.0,
+                          height: 24.0,
+                        ),
                         SizedBox(width: 10.0),
                         Text("Continue with Apple"),
                       ],
@@ -112,7 +120,12 @@ class SignIn extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Image(image: images.AssetImage('assets/images/apple.png'), width: 24.0, height: 24.0,color: Colors.white,),
+                        Image(
+                          image: images.AssetImage('assets/images/apple.png'),
+                          width: 24.0,
+                          height: 24.0,
+                          color: Colors.white,
+                        ),
                         SizedBox(width: 10.0),
                         Text("Continue with Apple"),
                       ],
@@ -166,6 +179,32 @@ class SignIn extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
                         child: const Text("Log in with a password"),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 50.0,
+                  width: 300, // or any width you want
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        "Don’t have an account? ",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          color: Color(0xFF7BEEFF),
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0, 2),
+                              blurRadius: 20,
+                              color: Color(0xFF06A0B5),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
