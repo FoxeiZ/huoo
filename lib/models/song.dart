@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart'
@@ -92,10 +91,6 @@ class Song extends Equatable {
     required AudioSourceEnum source,
     required audio_metadata.AudioMetadata metadata,
   }) {
-    log(
-      'Creating Song from AudioMetadata: ${metadata.title} by ${metadata.artist}',
-    );
-
     return Song(
       path: path,
       source: source,
@@ -146,7 +141,6 @@ class Song extends Equatable {
     var metadata = audio_metadata.readMetadata(
       File.fromUri(Uri.file(filePath)),
     );
-    log('Song has ${metadata.pictures.length} pictures');
 
     final songProvider = DatabaseHelper().songProvider;
     final existingSong = await songProvider.getByPath(filePath);
@@ -165,7 +159,7 @@ class Song extends Equatable {
       cover: coverPath,
       dateAdded: DateTime.now(),
     );
-    await DatabaseHelper().songProvider.insertOrUpdate(savedSong);
+    await songProvider.insertOrUpdate(savedSong);
     return savedSong;
   }
 
