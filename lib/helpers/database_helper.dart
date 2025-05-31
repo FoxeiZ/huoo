@@ -1,5 +1,4 @@
-import 'dart:developer';
-
+import 'package:logger/logger.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -7,48 +6,58 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:huoo/models/song.dart';
 
+final log = Logger(
+  filter: DevelopmentFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
+
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
-  static bool _isInitialized = false;
+  Database? _database;
+  SongProvider? _songProvider;
+  bool _isInitialized = false;
 
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  late final SongProvider songProvider;
+  SongProvider get songProvider {
+    if (_songProvider == null) {
+      throw StateError('Database not initialized. Call initialize() first.');
+    }
+    return _songProvider!;
+  }
 
-  Future<Database> get database async {
-    _database ??= await _initDatabase();
+  Future<Database> get db async {
+    if (!_isInitialized) {
+      await initialize();
+    }
     return _database!;
   }
 
-  // Add this method to ensure initialization
   Future<void> initialize() async {
     if (!_isInitialized) {
-      // Initialize database factory for desktop platforms
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      if (Platform.isWindows) {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
-      await database; // This will trigger _initDatabase if needed
+      _database = await _initDatabase();
+      _songProvider = SongProvider(_database!);
       _isInitialized = true;
     }
   }
 
   Future<Database> _initDatabase() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final documentsDirectory = await getApplicationSupportDirectory();
     final path = join(documentsDirectory.path, 'huoo_music.db');
-    log('Database path: $path');
+    log.i('Database path: $path');
 
-    var db = await openDatabase(
+    return await openDatabase(
       path,
       version: 1,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
-    // init providers
-    songProvider = SongProvider(db);
-    return db;
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -57,5 +66,19 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database schema migrations
+    // Example:
+    // if (oldVersion < 2) {
+    //   await db.execute('ALTER TABLE songs ADD COLUMN new_field TEXT');
+    // }
+  }
+
+  // Optional: Add dispose method for cleanup
+  Future<void> dispose() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+      _songProvider = null;
+      _isInitialized = false;
+    }
   }
 }
