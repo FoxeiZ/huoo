@@ -3,105 +3,98 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
 
 jobs:
   analyze:
     name: Analyze Code
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: stable
-        flutter-version: 3.29.3
-        cache: true
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.29.3
+          cache: true
 
-    - name: Cache Flutter dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-          ${{ runner.tool_cache }}/flutter
-        key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-flutter-
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ runner.tool_cache }}/flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
 
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - name: Get dependencies
+        run: flutter pub get
 
-    - name: Get dependencies
-      run: flutter pub get
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
 
-    - name: Verify formatting
-      run: dart format --output=none --set-exit-if-changed .
+      - name: Analyze project source
+        run: flutter analyze --fatal-infos --fatal-warnings
 
-    - name: Analyze project source
-      run: flutter analyze --fatal-infos --fatal-warnings
-
-    - name: Check for outdated dependencies
-      run: flutter pub deps
+      - name: Check for outdated dependencies
+        run: flutter pub deps
 
   build-test:
     name: Build Test
     runs-on: ubuntu-latest
     needs: analyze
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: stable
-        flutter-version: 3.29.3
-        cache: true
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
 
-    - name: Cache Flutter dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-          ${{ runner.tool_cache }}/flutter
-        key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-flutter-
+      - name: Decode Keystore and Create Properties
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/huoo-signing.p12
+          echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ${{ github.workspace }}/android/key.properties
+        working-directory: ${{ github.workspace }}
 
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.29.3
+          cache: true
 
-    - name: Get media_kit libs
-      run: |
-        sudo apt-get update
-        sudo apt-get install libmpv-dev -y
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ runner.tool_cache }}/flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
 
-    - name: Get dependencies
-      run: flutter pub get
+      - name: Get media_kit libs
+        run: |
+          sudo apt-get update
+          sudo apt-get install libmpv-dev -y
 
-    - name: Build APK (Debug)
-      run: flutter build apk --debug
+      - name: Get dependencies
+        run: flutter pub get
 
-    - name: Build APK (Release)
-      run: flutter build apk --release
+      - name: Build APK (Debug)
+        run: flutter build apk --debug
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: apk-builds
-        path: build/app/outputs/apk/**/*.apk
-        retention-days: 7
+      - name: Build APK (Release)
+        run: flutter build apk --release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-builds
+          path: build/app/outputs/apk/**/*.apk
+          retention-days: 7
