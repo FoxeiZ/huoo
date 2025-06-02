@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:logger/logger.dart';
 
 import 'package:huoo/screens/main_player.dart';
@@ -17,7 +18,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper().initialize();
   JustAudioMediaKit.ensureInitialized();
-
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
   runApp(const MyApp());
 }
 
@@ -29,7 +34,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
       ),
       home: BlocProvider(
         create: (context) => AudioPlayerBloc(),
