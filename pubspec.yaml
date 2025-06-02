@@ -46,7 +46,6 @@ dependencies:
   http: ^1.4.0
   logger: ^2.5.0
   # Audio playback
-  audio_session: ^0.2.2
   just_audio: ^0.10.3
   just_audio_media_kit: ^2.1.0
   just_audio_background: ^0.0.1-beta.17

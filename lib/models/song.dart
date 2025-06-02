@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -277,14 +278,82 @@ class Song extends Equatable {
     };
   }
 
+  factory Song.fromMediaItem(MediaItem mediaItem) {
+    return Song(
+      id: int.tryParse(mediaItem.id),
+      album: mediaItem.album ?? 'Unknown Album',
+      title: mediaItem.title,
+      artist: mediaItem.artist ?? 'Unknown Artist',
+      cover: mediaItem.artUri?.toFilePath(),
+      duration: mediaItem.duration ?? const Duration(seconds: 0),
+      genres: mediaItem.extras?['genres']?.toString().split(', ') ?? [],
+      path: mediaItem.extras?['path'] ?? '',
+      source:
+          mediaItem.extras?['source'] == 'AudioSourceEnum.local'
+              ? AudioSourceEnum.local
+              : mediaItem.extras?['source'] == 'AudioSourceEnum.api'
+              ? AudioSourceEnum.api
+              : AudioSourceEnum.asset,
+      year:
+          mediaItem.extras?['year'] != null
+              ? DateTime.tryParse(mediaItem.extras!['year'])
+              : null,
+      language: mediaItem.extras?['language'],
+      performers: mediaItem.extras?['performers']?.toString().split(', ') ?? [],
+      trackNumber: mediaItem.extras?['trackNumber'] ?? 0,
+      trackTotal: mediaItem.extras?['trackTotal'] ?? 0,
+      discNumber: mediaItem.extras?['discNumber'] ?? 0,
+      totalDisc: mediaItem.extras?['totalDisc'] ?? 0,
+      lyrics: mediaItem.extras?['lyrics'],
+      rating: (mediaItem.extras?['rating'] as num?)?.toDouble() ?? 0.0,
+      playCount: mediaItem.extras?['playCount'] ?? 0,
+      dateAdded:
+          mediaItem.extras?['dateAdded'] != null
+              ? DateTime.tryParse(mediaItem.extras!['dateAdded'])
+              : null,
+      lastPlayed:
+          mediaItem.extras?['lastPlayed'] != null
+              ? DateTime.tryParse(mediaItem.extras!['lastPlayed'])
+              : null,
+    );
+  }
+
+  MediaItem toMediaItem() {
+    return MediaItem(
+      id: id?.toString() ?? path,
+      album: album,
+      title: title,
+      artist: artist,
+      artUri: cover != null ? Uri.file(cover!) : null,
+      duration: duration,
+      genre: genres.isNotEmpty ? genres.join(', ') : null,
+      extras: {
+        'path': path,
+        'source': source.toString(),
+        'year': year?.year.toString(),
+        'language': language,
+        'performers': performers,
+        'trackNumber': trackNumber,
+        'trackTotal': trackTotal,
+        'discNumber': discNumber,
+        'totalDisc': totalDisc,
+        'lyrics': lyrics,
+        'rating': rating ?? 0.0,
+        'playCount': playCount,
+        'dateAdded': dateAdded?.toIso8601String(),
+        'lastPlayed': lastPlayed?.toIso8601String(),
+      },
+    );
+  }
+
   AudioSource toAudioSource() {
     switch (source) {
       case AudioSourceEnum.local:
-        return AudioSource.file(path, tag: this);
+        return AudioSource.file(path, tag: toMediaItem());
       case AudioSourceEnum.api:
-        return AudioSource.uri(Uri.parse(path), tag: this);
+        return AudioSource.uri(Uri.parse(path), tag: toMediaItem());
       case AudioSourceEnum.asset:
-        return AudioSource.asset(path, tag: this);
+        return AudioSource.asset(path, tag: toMediaItem());
     }
   }
 

@@ -4,8 +4,8 @@ import 'package:logger/logger.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:huoo/services/playlist_persistence_service.dart';
 
+import 'package:huoo/services/playlist_persistence_service.dart';
 import 'package:huoo/models/song.dart';
 
 part 'audio_player_event.dart';
@@ -82,7 +82,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           PlaylistPersistenceService.savePlaylistState(
             songs:
                 currentReadyState.playlist
-                    .map((source) => source.tag as Song)
+                    .map((source) => Song.fromMediaItem(source.tag))
                     .toList(),
             currentIndex: currentReadyState.currentIndex,
             currentPosition: currentReadyState.position,
@@ -177,7 +177,8 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         playlist: playlist ?? _player.sequence,
         currentIndex: currentIndex ?? _player.currentIndex,
         songMetadata:
-            songMetadata ?? (_player.sequenceState.currentSource?.tag as Song?),
+            songMetadata ??
+            (Song.fromMediaItem(_player.sequenceState.currentSource?.tag)),
         loading:
             loading ??
             _player.processingState == ProcessingState.loading ||
@@ -211,7 +212,10 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         final audioSources =
             savedState.songs
                 .map(
-                  (song) => AudioSource.uri(Uri.parse(song.path), tag: song),
+                  (song) => AudioSource.uri(
+                    Uri.parse(song.path),
+                    tag: song.toMediaItem(),
+                  ),
                 ) // Use song.path
                 .toList();
 
@@ -241,8 +245,8 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         final sequenceState = _player.sequenceState;
         Song? currentSong;
         int? actualCurrentIndex = savedState.currentIndex;
-        if (sequenceState.currentSource?.tag is Song) {
-          currentSong = sequenceState.currentSource!.tag as Song;
+        if (sequenceState.currentSource?.tag != null) {
+          currentSong = Song.fromMediaItem(sequenceState.currentSource!.tag);
           actualCurrentIndex = sequenceState.currentIndex;
         } else if (savedState.songs.isNotEmpty &&
             savedState.currentIndex < savedState.songs.length) {
@@ -275,7 +279,10 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       final audioSources =
           event.songs
               .map(
-                (song) => AudioSource.uri(Uri.parse(song.path), tag: song),
+                (song) => AudioSource.uri(
+                  Uri.parse(song.path),
+                  tag: song.toMediaItem(),
+                ),
               ) // Use song.path
               .toList();
 
@@ -615,7 +622,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         currentState.copyWith(
           playlist: currentPlaylist,
           currentIndex: currentCurrentIndex,
-          songMetadata: currentCurrentSource?.tag as Song?,
+          songMetadata: Song.fromMediaItem(currentCurrentSource?.tag),
           hasNext: event.hasNext,
           hasPrevious: event.hasPrevious,
         ),
