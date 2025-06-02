@@ -1,9 +1,212 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
 
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/widgets/audio/seekbar.dart';
+
+final log = Logger(
+  filter: ProductionFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
+
+void _showSnackBar(BuildContext context, String message) {
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context)
+    ..removeCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: "Dismiss",
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+        // showCloseIcon: true,
+      ),
+    );
+}
+
+class _SleepTimerDialog extends StatefulWidget {
+  @override
+  State<_SleepTimerDialog> createState() => _SleepTimerDialogState();
+}
+
+class _SleepTimerDialogState extends State<_SleepTimerDialog> {
+  // Timer duration in minutes (10 min to 5 hours = 300 minutes)
+  double _timerMinutes = 30.0;
+  static const double _minMinutes = 10.0;
+  static const double _maxMinutes = 300.0; // 5 hours
+  final TextEditingController _textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize text controller with default duration
+    _updateTextController();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _updateTextController() {
+    final hours = (_timerMinutes / 60).floor();
+    final minutes = (_timerMinutes % 60).round();
+
+    if (hours > 0) {
+      _textController.text = '${hours}h ${minutes}m';
+    } else {
+      _textController.text = '${minutes}m';
+    }
+  }
+
+  // manually input time
+  void _showTimeInputDialog() {
+    final inputController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Enter Duration'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Enter duration in minutes (10-300):'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: inputController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Minutes',
+                    border: OutlineInputBorder(),
+                    suffixText: 'min',
+                  ),
+                  autofocus: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final input = double.tryParse(inputController.text);
+                  if (input != null) {
+                    final normalizedMinutes = input.clamp(
+                      _minMinutes,
+                      _maxMinutes,
+                    );
+                    setState(() {
+                      _timerMinutes = normalizedMinutes;
+                      _updateTextController();
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Set'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Sleep Timer'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // tap-able text field
+          GestureDetector(
+            onTap: _showTimeInputDialog,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _textController.text,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.edit, size: 16),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // slider
+          Column(
+            children: [
+              Text(
+                'Adjust Duration',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Slider(
+                value: _timerMinutes,
+                min: _minMinutes,
+                max: _maxMinutes,
+                divisions: 58, // 10min steps approximately
+                onChanged: (value) {
+                  setState(() {
+                    _timerMinutes = value;
+                    _updateTextController();
+                  });
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${_minMinutes.round()}m'),
+                  Text('${(_maxMinutes / 60).round()}h'),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Implement actual timer functionality
+            log.i('Sleep timer set for ${_timerMinutes.round()} minutes');
+            _showSnackBar(
+              context,
+              'Sleep timer set for ${_textController.text}',
+            );
+            Navigator.pop(context);
+          },
+          child: const Text('Start Timer'),
+        ),
+      ],
+    );
+  }
+}
 
 class MainPlayer extends StatefulWidget {
   final Song? song;
@@ -93,7 +296,7 @@ class _PlayControlsSection extends StatelessWidget {
                     child: Icon(
                       state.playing ? Icons.pause : Icons.play_arrow,
                       size: 32,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       key: ValueKey<bool>(state.playing),
                     ),
                   ),
@@ -186,7 +389,7 @@ class _PlayerControlsSection extends StatelessWidget {
               Center(
                 child: Text(
                   "Error: ${state.message}",
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -224,6 +427,8 @@ class _AlbumArtSection extends StatelessWidget {
               "",
               width: imageSize,
               height: imageSize,
+              cacheHeight:
+                  (imageSize * MediaQuery.of(context).devicePixelRatio).round(),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 log.e("Error loading image: $error", stackTrace: stackTrace);
@@ -231,10 +436,16 @@ class _AlbumArtSection extends StatelessWidget {
                   width: imageSize,
                   height: imageSize,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onErrorContainer.withAlpha(48),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.error, size: 50, color: Colors.red),
+                  child: Icon(
+                    Icons.error,
+                    size: 50,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 );
               },
             ),
@@ -295,9 +506,11 @@ class _SongTextInfoSection extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         audioMetadata?.artist ?? "Unknown Artist",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withAlpha(153),
                         ),
                       ),
                     ),
@@ -343,8 +556,24 @@ class _SongTextInfoSection extends StatelessWidget {
 class _MainPlayerState extends State<MainPlayer> {
   bool _isFavorite = false;
 
+  Future<void> _showTimerDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _SleepTimerDialog();
+      },
+    );
+  }
+
   void _showBottomSheet(BuildContext context) {
+    var isLocal =
+        (context.read<AudioPlayerBloc>().state as AudioPlayerReady)
+            .songMetadata
+            ?.source ==
+        AudioSourceEnum.local;
+
     showModalBottomSheet(
+      enableDrag: false,
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -353,34 +582,66 @@ class _MainPlayerState extends State<MainPlayer> {
       ),
       builder: (_) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.4,
-          minChildSize: 0.2,
-          maxChildSize: 0.75,
           expand: false,
+          initialChildSize: 0.3,
+          maxChildSize: 0.8,
+          snap: true,
+          snapSizes: [0.3, 0.8],
           builder: (_, scrollController) {
-            return SingleChildScrollView(
+            return ListView(
               controller: scrollController,
-              child: Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2.5),
-                    ),
-                  ),
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.playlist_add),
+                  title: const Text('Add To Playlist'),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.add_circle_outline),
+                  title: const Text('Add To Queue'),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.clear_all),
+                  title: const Text('Clear Queue'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(
+                      AudioPlayerClearPlaylistEvent(),
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.album),
+                  title: const Text('View Album'),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person_pin),
+                  title: const Text('View Artist'),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                // Conditional options based on song source
+                if (isLocal) ...[
                   ListTile(
-                    leading: const Icon(Icons.playlist_add),
-                    title: const Text('Add to playlist'),
+                    leading: const Icon(Icons.drive_file_rename_outline_sharp),
+                    title: const Text('Modify tags'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
+                ] else ...[
                   ListTile(
-                    leading: const Icon(Icons.favorite_border),
-                    title: const Text('Add to favorites'),
+                    leading: const Icon(Icons.cloud_download),
+                    title: const Text('Download song'),
                     onTap: () {
                       Navigator.pop(context);
                     },
@@ -392,22 +653,80 @@ class _MainPlayerState extends State<MainPlayer> {
                       Navigator.pop(context);
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.download),
-                    title: const Text('Download'),
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.info),
-                    title: const Text('Load test song'),
-                    onTap: () {
-                      context.read<AudioPlayerBloc>().add(AddTestSongEvent());
-                    },
-                  ),
                 ],
-              ),
+                ListTile(
+                  leading: const Icon(Icons.timer),
+                  title: const Text('Sleep Timer'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _showTimerDialog(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Load test song'),
+                  onTap: () {
+                    context.read<AudioPlayerBloc>().add(AddTestSongEvent());
+                    _showSnackBar(context, "Test song loaded");
+                  },
+                ),
+              ],
             );
           },
         );
@@ -433,7 +752,7 @@ class _MainPlayerState extends State<MainPlayer> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 32, 16, 48),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -450,7 +769,7 @@ class _MainPlayerState extends State<MainPlayer> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      physics: const NeverScrollableScrollPhysics(),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           minHeight: constraints.maxHeight,
