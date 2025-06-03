@@ -64,9 +64,11 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     add(const AudioPlayerInitializeEvent());
   }
 
-  void _initSubscriptions() {
+  Future<void> _initSubscriptions() async {
     // AudioPlayerStateEvent
-    _playerStateSubscription = _player.playerStateStream.listen((playerState) {
+    _playerStateSubscription = _player.playerStateStream.listen((
+      playerState,
+    ) async {
       add(
         AudioPlayerStateEvent(
           playerState.playing,
@@ -80,10 +82,11 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         final currentReadyState = state as AudioPlayerReady;
         if (currentReadyState.playlist.isNotEmpty) {
           PlaylistPersistenceService.savePlaylistState(
-            songs:
-                currentReadyState.playlist
-                    .map((source) => Song.fromMediaItem(source.tag))
-                    .toList(),
+            songs: await Future.wait(
+              currentReadyState.playlist
+                  .map((source) => Song.fromMediaItem(source.tag))
+                  .toList(),
+            ),
             currentIndex: currentReadyState.currentIndex,
             currentPosition: currentReadyState.position,
             loopMode: currentReadyState.loopMode.name,
@@ -150,7 +153,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     });
   }
 
-  void _emitStateFromPlayer(
+  Future<void> _emitStateFromPlayer(
     Emitter<AudioPlayerState> emit, {
     AudioSource? source,
     List<IndexedAudioSource>? playlist,
@@ -170,7 +173,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     int? androidAudioSessionId,
     bool? hasNext,
     bool? hasPrevious,
-  }) {
+  }) async {
     emit(
       AudioPlayerReady(
         source: source ?? _player.audioSource,
@@ -178,7 +181,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         currentIndex: currentIndex ?? _player.currentIndex,
         songMetadata:
             songMetadata ??
-            (Song.fromMediaItem(_player.sequenceState.currentSource?.tag)),
+            (await Song.fromMediaItem(
+              _player.sequenceState.currentSource?.tag,
+            )),
         loading:
             loading ??
             _player.processingState == ProcessingState.loading ||
@@ -209,19 +214,13 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     try {
       final savedState = await PlaylistPersistenceService.loadPlaylistState();
       if (savedState != null && savedState.songs.isNotEmpty) {
-        final audioSources =
-            savedState.songs
-                .map(
-                  (song) => AudioSource.uri(
-                    Uri.parse(song.path),
-                    tag: song.toMediaItem(),
-                  ),
-                ) // Use song.path
-                .toList();
+        final audioSources = await Future.wait(
+          savedState.songs.map((song) => song.toAudioSource()).toList(),
+        );
 
         if (audioSources.isEmpty) {
           log.w('No valid audio sources from saved state, initializing empty.');
-          _emitStateFromPlayer(emit);
+          await _emitStateFromPlayer(emit);
           return;
         }
 
@@ -246,19 +245,21 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         Song? currentSong;
         int? actualCurrentIndex = savedState.currentIndex;
         if (sequenceState.currentSource?.tag != null) {
-          currentSong = Song.fromMediaItem(sequenceState.currentSource!.tag);
+          currentSong = await Song.fromMediaItem(
+            sequenceState.currentSource!.tag,
+          );
           actualCurrentIndex = sequenceState.currentIndex;
         } else if (savedState.songs.isNotEmpty &&
             savedState.currentIndex < savedState.songs.length) {
           currentSong = savedState.songs[savedState.currentIndex];
         }
 
-        _emitStateFromPlayer(emit);
+        await _emitStateFromPlayer(emit);
         log.d(
           'Player initialized and playlist restored. Index: $actualCurrentIndex, Song: ${currentSong?.title}',
         );
       } else {
-        _emitStateFromPlayer(emit);
+        await _emitStateFromPlayer(emit);
         log.w('Player initialized. No saved playlist or playlist was empty.');
       }
     } catch (e, stackTrace) {
@@ -320,7 +321,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         currentSong = event.songs[initialIndex];
       }
 
-      _emitStateFromPlayer(emit);
+      await _emitStateFromPlayer(emit);
       log.d(
         'New playlist loaded. Index: ${_player.currentIndex}, Song: ${currentSong?.title}',
       );
@@ -356,16 +357,16 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     try {
       if (state is AudioPlayerReady) {
         if (_player.sequenceState.sequence.isEmpty) {
-          await _player.setAudioSource(event.song.toAudioSource());
+          await _player.setAudioSource(await event.song.toAudioSource());
           await _player.playerStateStream.firstWhere(
             (ps) => ps.processingState != ProcessingState.loading,
           );
           log.d('First song added to empty playlist: ${event.song.title}');
         } else {
-          await _player.addAudioSource(event.song.toAudioSource());
+          await _player.addAudioSource(await event.song.toAudioSource());
           log.d('Song added to existing playlist: ${event.song.title}');
         }
-        _emitStateFromPlayer(emit);
+        await _emitStateFromPlayer(emit);
       }
     } catch (e, stackTrace) {
       log.e('Error adding song: ${e.toString()}', stackTrace: stackTrace);
@@ -528,7 +529,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           _player.seek(Duration.zero);
         }
         await _player.play();
-        _emitStateFromPlayer(emit);
+        await _emitStateFromPlayer(emit);
       } catch (e) {
         emit(AudioPlayerError('Failed to play song: ${e.toString()}'));
       }
@@ -622,7 +623,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         currentState.copyWith(
           playlist: currentPlaylist,
           currentIndex: currentCurrentIndex,
-          songMetadata: Song.fromMediaItem(currentCurrentSource?.tag),
+          songMetadata: await Song.fromMediaItem(currentCurrentSource?.tag),
           hasNext: event.hasNext,
           hasPrevious: event.hasPrevious,
         ),

@@ -456,7 +456,7 @@ class _AlbumArtSection extends StatelessWidget {
   }
 }
 
-class _SongTextInfoSection extends StatelessWidget {
+class _SongTextInfoSection extends StatefulWidget {
   final bool isFavorite;
   final ValueChanged<bool> onFavoriteChanged;
 
@@ -464,6 +464,13 @@ class _SongTextInfoSection extends StatelessWidget {
     required this.isFavorite,
     required this.onFavoriteChanged,
   });
+
+  @override
+  State<_SongTextInfoSection> createState() => _SongTextInfoSectionState();
+}
+
+class _SongTextInfoSectionState extends State<_SongTextInfoSection> {
+  String artistName = "Unknown Artist";
 
   @override
   Widget build(BuildContext context) {
@@ -477,6 +484,11 @@ class _SongTextInfoSection extends StatelessWidget {
       builder: (context, state) {
         Song? audioMetadata =
             state is AudioPlayerReady ? state.songMetadata : null;
+        audioMetadata?.artist.then((artist) {
+          setState(() {
+            artistName = artist;
+          });
+        });
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -505,7 +517,7 @@ class _SongTextInfoSection extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        audioMetadata?.artist ?? "Unknown Artist",
+                        artistName,
                         style: TextStyle(
                           fontSize: 16,
                           color: Theme.of(
@@ -534,10 +546,12 @@ class _SongTextInfoSection extends StatelessWidget {
                         iconSize: 20,
                         padding: const EdgeInsets.all(8),
                         icon: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          widget.isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                         ),
                         onPressed: () {
-                          onFavoriteChanged(!isFavorite);
+                          widget.onFavoriteChanged(!widget.isFavorite);
                           log.i("Favorite button pressed");
                         },
                       ),
