@@ -6,16 +6,18 @@ class SignIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black, // Dark background
+    final theme = Theme.of(context);
 
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface, // Use background color from the theme
       body: Stack(
         children: [
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.arrow_back),
+                color: theme.colorScheme.onSurface, // Use text color from the theme
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -34,18 +36,15 @@ class SignIn extends StatelessWidget {
                     image: DecorationImage(
                       image: AssetImage(
                         'assets/images/6cfbd001ff75178285fac1db2202d54d9a71e994.png',
-                      ), // Replace with your logo path
+                      ),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                const Text(
+                const SizedBox(height: 20.0),
+                Text(
                   "Let's get you in",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white, // Light text for contrast
-                  ),
+                  style: theme.textTheme.headlineLarge, // Use headline1 from the theme
                 ),
                 const SizedBox(height: 20.0),
                 ConstrainedBox(
@@ -53,8 +52,8 @@ class SignIn extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[900],
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.surface, // Use surface color
+                      foregroundColor: theme.colorScheme.onSurface, // Use text color on surface
                       minimumSize: const Size.fromHeight(50),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -81,8 +80,8 @@ class SignIn extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[900],
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.surface,
+                      foregroundColor: theme.colorScheme.onSurface,
                       minimumSize: const Size.fromHeight(50),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -98,7 +97,7 @@ class SignIn extends StatelessWidget {
                           height: 24.0,
                         ),
                         SizedBox(width: 10.0),
-                        Text("Continue with Apple"),
+                        Text("Continue with Facebook"),
                       ],
                     ),
                   ),
@@ -109,8 +108,8 @@ class SignIn extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[900],
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.surface,
+                      foregroundColor: theme.colorScheme.onSurface,
                       minimumSize: const Size.fromHeight(50),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -134,18 +133,18 @@ class SignIn extends StatelessWidget {
                 ),
                 const SizedBox(height: 25.0),
                 SizedBox(
-                  width: 300, // or any width you want
+                  width: 300,
                   child: Row(
-                    children: const [
+                    children: [
                       Expanded(
-                        child: Divider(thickness: 1, color: Colors.grey),
+                        child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
                       ),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('or', style: TextStyle(color: Colors.grey)),
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('or', style: TextStyle(color: theme.colorScheme.onSurface)),
                       ),
                       Expanded(
-                        child: Divider(thickness: 1, color: Colors.grey),
+                        child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
                       ),
                     ],
                   ),
@@ -162,7 +161,7 @@ class SignIn extends StatelessWidget {
                         decoration: BoxDecoration(
                           boxShadow: [
                             BoxShadow(
-                              color: const Color.fromARGB(153, 78, 230, 250),
+                              color: theme.colorScheme.primary.withOpacity(0.6),
                               blurRadius: 10.0,
                               spreadRadius: 5.0,
                             ),
@@ -173,8 +172,8 @@ class SignIn extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(6, 160, 181, 1),
-                          foregroundColor: Colors.white,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           minimumSize: const Size.fromHeight(50),
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
@@ -183,25 +182,26 @@ class SignIn extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 50.0),
                 SizedBox(
                   height: 50.0,
-                  width: 300, // or any width you want
+                  width: 300,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Text(
                         "Don’t have an account? ",
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                       Text(
                         "Sign Up",
                         style: TextStyle(
-                          color: Color(0xFF7BEEFF),
+                          color: theme.colorScheme.secondary,
                           shadows: [
                             Shadow(
-                              offset: Offset(0, 2),
+                              offset: const Offset(0, 2),
                               blurRadius: 20,
-                              color: Color(0xFF06A0B5),
+                              color: theme.colorScheme.primary,
                             ),
                           ],
                         ),

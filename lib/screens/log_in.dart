@@ -13,8 +13,10 @@ class _LogInState extends State<LogIn> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.colorScheme.surface,
       body: Stack(
         children: [
           GestureDetector(
@@ -31,7 +33,7 @@ class _LogInState extends State<LogIn> {
                       height: 120.0,
                       decoration: BoxDecoration(
                         shape: BoxShape.rectangle,
-                        image: DecorationImage(
+                        image: const DecorationImage(
                           image: AssetImage(
                             'assets/images/6cfbd001ff75178285fac1db2202d54d9a71e994.png',
                           ),
@@ -39,44 +41,41 @@ class _LogInState extends State<LogIn> {
                         ),
                       ),
                     ),
-                    const Text(
+                    const SizedBox(height: 20.0),
+                    Text(
                       "Login to your account",
-                      style: TextStyle(
-                        fontSize: 30.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: theme.textTheme.headlineLarge, // Use headlineLarge from the theme
                     ),
                     const SizedBox(height: 20.0),
-                    Container(
+                    SizedBox(
                       width: 330,
                       child: TextFormField(
                         decoration: InputDecoration(
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                             borderSide: BorderSide(
-                              color: Colors.white70,
+                              color: theme.colorScheme.onSurface,
                               width: 1.0,
                             ),
                           ),
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Colors.white70),
+                          labelStyle: TextStyle(color: theme.colorScheme.onSurface),
                           filled: true,
-                          fillColor: Colors.grey.shade900,
+                          fillColor: theme.colorScheme.surface,
                           prefixIcon: Icon(
                             Icons.email_outlined,
-                            color: Colors.white70,
+                            color: theme.colorScheme.onSurface,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                     ),
                     const SizedBox(height: 10.0),
-                    Container(
+                    SizedBox(
                       width: 330,
                       child: TextFormField(
                         obscureText: _obscurePassword,
@@ -84,24 +83,24 @@ class _LogInState extends State<LogIn> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                             borderSide: BorderSide(
-                              color: Colors.white70,
+                              color: theme.colorScheme.onSurface,
                               width: 1.0,
                             ),
                           ),
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: Colors.white70),
+                          labelStyle: TextStyle(color: theme.colorScheme.onSurface),
                           filled: true,
-                          fillColor: Colors.grey.shade900,
+                          fillColor: theme.colorScheme.surface,
                           prefixIcon: Icon(
                             Icons.lock_outline,
-                            color: Colors.white70,
+                            color: theme.colorScheme.onSurface,
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.white70,
+                              color: theme.colorScheme.onSurface,
                             ),
                             onPressed: () {
                               setState(() {
@@ -114,7 +113,7 @@ class _LogInState extends State<LogIn> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                     ),
                     SizedBox(
@@ -128,14 +127,14 @@ class _LogInState extends State<LogIn> {
                                 _isChecked = value ?? false;
                               });
                             },
-                            activeColor: Colors.blue,
+                            activeColor: theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4.0),
                             ),
                           ),
-                          const Text(
+                          Text(
                             "Remember me",
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(color: theme.colorScheme.onSurface),
                           ),
                         ],
                       ),
@@ -151,7 +150,7 @@ class _LogInState extends State<LogIn> {
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color.fromARGB(153, 78, 230, 250),
+                                  color: theme.colorScheme.primary.withOpacity(0.6),
                                   blurRadius: 10.0,
                                   spreadRadius: 5.0,
                                 ),
@@ -162,8 +161,8 @@ class _LogInState extends State<LogIn> {
                           ElevatedButton(
                             onPressed: () {},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromRGBO(6, 160, 181, 1),
-                              foregroundColor: Colors.white,
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
                               minimumSize: const Size.fromHeight(50),
                               padding: const EdgeInsets.symmetric(vertical: 16.0),
                             ),
@@ -176,24 +175,24 @@ class _LogInState extends State<LogIn> {
                     Text(
                       "Forgot your password?",
                       style: TextStyle(
-                        color: Color.fromRGBO(6, 160, 181, 1),
+                        color: theme.colorScheme.secondary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
-                    SizedBox(height: 15.0),
+                    const SizedBox(height: 15.0),
                     SizedBox(
                       width: 300,
                       child: Row(
-                        children: const [
+                        children: [
                           Expanded(
-                            child: Divider(thickness: 1, color: Colors.grey),
+                            child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
                           ),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text('or', style: TextStyle(color: Colors.grey)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text('or', style: TextStyle(color: theme.colorScheme.onSurface)),
                           ),
                           Expanded(
-                            child: Divider(thickness: 1, color: Colors.grey),
+                            child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
                           ),
                         ],
                       ),
@@ -202,85 +201,30 @@ class _LogInState extends State<LogIn> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color.fromRGBO(30, 30, 30, 1),
-                            border: Border.all(
-                              color: Colors.grey,
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/google.png',
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color.fromRGBO(30, 30, 30, 1),
-                            border: Border.all(
-                              color: Colors.grey,
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/fb.png',
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color.fromRGBO(30, 30, 30, 1),
-                            border: Border.all(
-                              color: Colors.grey,
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/apple.png',
-                              color: Colors.white,
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
-                        ),
+                        _buildSocialButton('assets/images/google.png', theme),
+                        _buildSocialButton('assets/images/fb.png', theme),
+                        _buildSocialButton('assets/images/apple.png', theme),
                       ],
                     ),
+                    const SizedBox(height: 100.0),
                     SizedBox(
-                      height: 100.0,
                       width: 300,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Text(
                             "Don’t have an account? ",
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: theme.colorScheme.onSurface),
                           ),
                           Text(
                             "Sign Up",
                             style: TextStyle(
-                              color: Color(0xFF7BEEFF),
+                              color: theme.colorScheme.secondary,
                               shadows: [
                                 Shadow(
-                                  offset: Offset(0, 2),
+                                  offset: const Offset(0, 2),
                                   blurRadius: 20,
-                                  color: Color(0xFF06A0B5),
+                                  color: theme.colorScheme.primary,
                                 ),
                               ],
                             ),
@@ -297,13 +241,37 @@ class _LogInState extends State<LogIn> {
             top: 20.0,
             left: 10.0,
             child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back),
+              color: theme.colorScheme.onSurface,
               onPressed: () {
                 Navigator.pop(context); // Navigate back
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSocialButton(String assetPath, ThemeData theme) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.colorScheme.surface,
+        border: Border.all(
+          color: theme.colorScheme.onSurface,
+          width: 1.0,
+        ),
+      ),
+      child: Center(
+        child: Image.asset(
+          assetPath,
+          width: 30,
+          height: 30,
+          color: assetPath.contains('apple') ? Colors.white : null, // Apply white color for Apple logo
+        ),
       ),
     );
   }
