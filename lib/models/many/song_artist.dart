@@ -1,4 +1,4 @@
-import 'package:huoo/helpers/database_helper.dart';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/artist.dart';
 import 'package:huoo/models/song.dart';
 import 'package:sqflite/sqflite.dart';
@@ -10,6 +10,8 @@ class SongArtistColumns {
   static const String id = 'id';
   static const String songId = 'song_id';
   static const String artistId = 'artist_id';
+
+  static List<String> get allColumns => [id, songId, artistId];
 }
 
 class SongArtist {
@@ -31,12 +33,12 @@ class SongArtist {
     return SongArtist(
       id: map[SongArtistColumns.id] as int?,
       song:
-          await DatabaseHelper().songProvider.get(
+          await DatabaseHelper().songProvider.getById(
             map[SongArtistColumns.songId] as int,
           ) ??
           Song.empty(),
       artist:
-          await DatabaseHelper().artistProvider.get(
+          await DatabaseHelper().artistProvider.getById(
             map[SongArtistColumns.artistId] as int,
           ) ??
           Artist.empty(),
@@ -45,7 +47,7 @@ class SongArtist {
 }
 
 class SongArtistProvider extends BaseProvider<SongArtist> {
-  SongArtistProvider(super.db);
+  SongArtistProvider({super.db, super.dbWrapper});
 
   static Future<void> createTable(Database db) async {
     await db.execute('''CREATE TABLE ${SongArtistColumns.table} (
@@ -100,6 +102,9 @@ class SongArtistProvider extends BaseProvider<SongArtist> {
 
   @override
   String get idColumnName => SongArtistColumns.id;
+
+  @override
+  List<String> get columns => SongArtistColumns.allColumns;
 
   @override
   Future<SongArtist> itemFromMap(Map<String, dynamic> map) {

@@ -1,46 +1,50 @@
 import 'package:sqflite/sqflite.dart';
 
+import 'package:huoo/base/db/wrapper.dart';
+
 abstract class BaseProvider<T> {
-  final Database db;
+  late final DatabaseOperation _dbOperation;
+  DatabaseOperation get db => _dbOperation;
 
-  BaseProvider(this.db);
-
-  static Future<void> createTable(Database db) {
-    throw UnimplementedError(
-      'createSongsTable needs to be implemented by a subclass',
-    );
+  BaseProvider({Database? db, DatabaseOperation? dbWrapper}) {
+    if (dbWrapper != null) {
+      _dbOperation = dbWrapper;
+    } else if (db == null) {
+      throw ArgumentError('Database or DatabaseOperation must be provided');
+    } else {
+      if (db.isOpen == false) {
+        throw StateError('Database is not open');
+      }
+      _dbOperation = DatabaseWrapper(db);
+    }
   }
 
-  static Future<void> dropTable(Database db) {
-    throw UnimplementedError(
-      'dropSongsTable needs to be implemented by a subclass',
-    );
+  static Future<void> createTable(Database db) async {
+    throw UnimplementedError('createTable must be implemented in subclasses');
   }
 
-  String get tableName;
-  String get idColumnName;
+  static Future<void> dropTable(Database db) async {
+    throw UnimplementedError('createTable must be implemented in subclasses');
+  }
 
-  Map<String, dynamic> itemToMap(T item);
-  Future<T> itemFromMap(Map<String, dynamic> map);
-  T copyWithId(T item, int? id);
-  int? getItemId(T item);
-
-  Future<T> insert(T item) {
+  Future<T> insert(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
     final id = getItemId(item);
     if (id != null && id != 0) {
       throw ArgumentError('Item must not have a valid ID for insert');
     }
-    return db.insert(tableName, itemToMap(item)).then((id) {
+    return wrapper.insert(tableName, itemToMap(item)).then((id) {
       return copyWithId(item, id);
     });
   }
 
-  Future<int> update(T item) async {
+  Future<int> update(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
     final id = getItemId(item);
     if (id == null) {
       throw ArgumentError('Item must have a valid ID for update');
     }
-    return db.update(
+    return wrapper.update(
       tableName,
       itemToMap(item),
       where: '$idColumnName = ?',
@@ -48,101 +52,69 @@ abstract class BaseProvider<T> {
     );
   }
 
-  Future<int> delete(int? id) async {
-    if (id == 0 || id == null) {
-      throw ArgumentError('Cannot delete item with ID 0 or null');
-    }
-    return db.delete(tableName, where: '$idColumnName = ?', whereArgs: [id]);
-  }
-
-  Future<T?> get(int? id) async {
-    if (id == null || id == 0) {
-      return null;
-    }
-    final maps = await db.query(
-      tableName,
-      where: '$idColumnName = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) {
-      return await itemFromMap(maps.first);
-    }
-    return null;
-  }
-}
-
-abstract class CrudProvider<T> extends BaseProvider<T> {
-  CrudProvider(super.db);
-
-  Future<List<T>> getAll();
-
-  Future<T?> insertOrUpdate(T item) async {
-    var existing = await get(getItemId(item));
-    if (existing == null || item == 0) {
-      return insert(item);
+  Future<T> insertOrUpdate(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final id = getItemId(item);
+    if (id != null && id != 0) {
+      final oldItem = getById(id, wrapper);
+      if (oldItem != item) return update(item, wrapper).then((_) => item);
+      return Future.value(item);
     } else {
-      return update(item).then((_) => get(getItemId(item)));
+      return insert(item, wrapper);
     }
   }
 
-  Future<int> count() {
-    return db.rawQuery('SELECT COUNT(*) FROM $tableName').then((value) {
-      if (value.isNotEmpty) {
-        return Sqflite.firstIntValue(value) ?? 0;
-      }
-      return 0;
+  Future<void> insertAll(List<T> items, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return Future.wait(items.map((item) => insert(item, wrapper)));
+  }
+
+  Future<int> count([DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper.count(tableName);
+  }
+
+  String get tableName;
+  String get idColumnName;
+
+  /// Dont include the ID column in this list when implementing.
+  List<String> get columns;
+  Map<String, dynamic> itemToMap(T item);
+  Future<T> itemFromMap(Map<String, dynamic> map);
+  T copyWithId(T item, int? id);
+  int? getItemId(T item);
+  Future<T?> queryFromItem(T item, [DatabaseOperation? dbWrapper]) async {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final itemMap = itemToMap(item);
+    final nonNullColumns =
+        columns.where((col) => itemMap[col] != null).toList();
+    if (nonNullColumns.isEmpty) return null;
+
+    return wrapper
+        .query(
+          tableName,
+          where: nonNullColumns.map((col) => '$col = ?').join(' AND '),
+          whereArgs: nonNullColumns.map((col) => itemMap[col]).toList(),
+        )
+        .then((maps) => maps.isNotEmpty ? itemFromMap(maps.first) : null);
+  }
+
+  Future<List<T>> getAll([DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper.query(tableName).then((maps) {
+      return Future.wait(maps.map((map) => itemFromMap(map)).toList());
     });
   }
 
-  Future<int> deleteAll() {
-    return db.delete(tableName);
-  }
-
-  void batchInsert(Batch batch, T item) {
-    batch.insert(tableName, itemToMap(item));
-  }
-
-  void batchUpdate(Batch batch, T item) {
-    final id = getItemId(item);
-    if (id != null) {
-      batch.update(
-        tableName,
-        itemToMap(item),
-        where: '$idColumnName = ?',
-        whereArgs: [id],
-      );
-    }
-  }
-
-  void batchDelete(Batch batch, int id) {
-    batch.delete(tableName, where: '$idColumnName = ?', whereArgs: [id]);
-  }
-
-  void batchDeleteWhere(Batch batch, String where, List<Object?> whereArgs) {
-    batch.delete(tableName, where: where, whereArgs: whereArgs);
-  }
-
-  void batchUpdateWhere(
-    Batch batch,
-    Map<String, Object?> values,
-    String where,
-    List<Object?> whereArgs,
-  ) {
-    batch.update(tableName, values, where: where, whereArgs: whereArgs);
-  }
-
-  Batch createBatch() => db.batch();
-
-  Future<List<Object?>> commitBatch(
-    Batch batch, {
-    bool? exclusive,
-    bool? noResult,
-    bool? continueOnError,
-  }) {
-    return batch.commit(
-      exclusive: exclusive,
-      noResult: noResult,
-      continueOnError: continueOnError,
-    );
+  Future<T?> getById(int id, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper
+        .query(tableName, where: '$idColumnName = ?', whereArgs: [id])
+        .then((maps) {
+          if (maps.isNotEmpty) {
+            return itemFromMap(maps.first);
+          }
+          return null;
+        });
   }
 }

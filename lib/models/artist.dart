@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:huoo/base/db/provider.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/models/album.dart';
-import 'package:huoo/models/many/album_artist.dart';
 
 class ArtistColumns {
   static const String table = 'artists';
@@ -12,6 +12,8 @@ class ArtistColumns {
   static const String name = 'name';
   static const String imageUri = 'image_uri';
   static const String bio = 'bio';
+
+  static List<String> get allColumns => [id, name, imageUri, bio];
 }
 
 class Artist extends Equatable {
@@ -67,14 +69,17 @@ class Artist extends Equatable {
   }
 }
 
-class ArtistProvider extends CrudProvider<Artist> {
-  ArtistProvider(super.db);
+class ArtistProvider extends BaseProvider<Artist> {
+  ArtistProvider({super.db, super.dbWrapper});
 
   @override
   String get tableName => ArtistColumns.table;
 
   @override
   String get idColumnName => ArtistColumns.id;
+
+  @override
+  List<String> get columns => ArtistColumns.allColumns;
 
   Future<Artist?> getByName(String name) async {
     final maps = await db.query(
@@ -87,18 +92,6 @@ class ArtistProvider extends CrudProvider<Artist> {
       return Artist.fromMap(maps.first);
     }
     return null;
-  }
-
-  @override
-  Future<List<Artist>> getAll() async {
-    final maps = await db.query(tableName);
-    return maps.map((map) => Artist.fromMap(map)).toList();
-  }
-
-  @override
-  Future<int> count() async {
-    final result = await db.rawQuery('SELECT COUNT(*) FROM $tableName');
-    return Sqflite.firstIntValue(result) ?? 0;
   }
 
   @override
@@ -126,7 +119,7 @@ class ArtistProvider extends CrudProvider<Artist> {
   }
 
   Future<List<Album>> getAlbums(int artistId) async {
-    final albumArtistProvider = AlbumArtistProvider(db);
+    final albumArtistProvider = DatabaseHelper().albumArtistProvider;
     final albumArtists = await albumArtistProvider.getByArtistId(artistId);
 
     final albumIds =

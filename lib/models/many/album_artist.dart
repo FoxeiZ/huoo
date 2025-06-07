@@ -1,8 +1,9 @@
+import 'package:huoo/base/db/wrapper.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:huoo/models/album.dart';
 import 'package:huoo/models/artist.dart';
-import 'package:huoo/helpers/database_helper.dart';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/base/db/provider.dart';
 
 class AlbumArtistColumns {
@@ -10,6 +11,8 @@ class AlbumArtistColumns {
   static const String id = 'id';
   static const String albumId = 'album_id';
   static const String artistId = 'artist_id';
+
+  static List<String> get allColumns => [id, albumId, artistId];
 }
 
 class AlbumArtist {
@@ -31,21 +34,29 @@ class AlbumArtist {
     return AlbumArtist(
       id: map[AlbumArtistColumns.id] as int?,
       album:
-          await DatabaseHelper().albumProvider.get(
+          await DatabaseHelper().albumProvider.getById(
             map[AlbumArtistColumns.albumId] as int,
           ) ??
           Album.empty(),
       artist:
-          await DatabaseHelper().artistProvider.get(
+          await DatabaseHelper().artistProvider.getById(
             map[AlbumArtistColumns.artistId] as int,
           ) ??
           Artist.empty(),
     );
   }
+
+  AlbumArtist copyWith({int? id, Album? album, Artist? artist}) {
+    return AlbumArtist(
+      id: id ?? this.id,
+      album: album ?? this.album,
+      artist: artist ?? this.artist,
+    );
+  }
 }
 
 class AlbumArtistProvider extends BaseProvider<AlbumArtist> {
-  AlbumArtistProvider(super.db);
+  AlbumArtistProvider({super.db, super.dbWrapper});
 
   static Future<void> createTable(Database db) async {
     await db.execute('''
@@ -104,6 +115,9 @@ class AlbumArtistProvider extends BaseProvider<AlbumArtist> {
   String get idColumnName => AlbumArtistColumns.id;
 
   @override
+  List<String> get columns => AlbumArtistColumns.allColumns;
+
+  @override
   Future<AlbumArtist> itemFromMap(Map<String, dynamic> map) {
     return AlbumArtist.fromMap(map);
   }
@@ -111,6 +125,23 @@ class AlbumArtistProvider extends BaseProvider<AlbumArtist> {
   @override
   Map<String, dynamic> itemToMap(AlbumArtist item) {
     return item.toMap();
+  }
+
+  @override
+  Future<AlbumArtist> insert(AlbumArtist item, [DatabaseOperation? dbWrapper]) {
+    final artistProvider = DatabaseHelper().artistProvider;
+    final albumProvider = DatabaseHelper().albumProvider;
+    if (item.artist.id == null) {
+      artistProvider.insert(item.artist, dbWrapper).then((artist) {
+        item = item.copyWith(artist: artist);
+      });
+    }
+    if (item.album.id == null) {
+      albumProvider.insert(item.album, dbWrapper).then((album) {
+        item = item.copyWith(album: album);
+      });
+    }
+    return super.insert(item, dbWrapper);
   }
 
   @override

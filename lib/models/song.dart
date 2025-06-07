@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:huoo/base/db/provider.dart';
-import 'package:huoo/helpers/database_helper.dart';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/album.dart';
 
 enum AudioSourceEnum { local, api, asset }
@@ -40,6 +40,28 @@ class SongColumns {
   static const String lastPlayed = 'last_played';
   static const String rating = 'rating';
   static const String cover = 'cover';
+
+  static List<String> get allColumns => [
+    id,
+    path,
+    albumId,
+    year,
+    language,
+    performers,
+    title,
+    trackNumber,
+    trackTotal,
+    duration,
+    genres,
+    discNumber,
+    totalDisc,
+    lyrics,
+    playCount,
+    dateAdded,
+    lastPlayed,
+    rating,
+    cover,
+  ];
 }
 
 class Song extends Equatable {
@@ -64,6 +86,9 @@ class Song extends Equatable {
   final int playCount;
   final DateTime? dateAdded;
   final DateTime? lastPlayed;
+  // extra model info
+  final List<Artist>? artists;
+  final Album? album;
 
   const Song({
     this.id,
@@ -86,6 +111,8 @@ class Song extends Equatable {
     this.playCount = 0,
     this.dateAdded,
     this.lastPlayed,
+    this.artists,
+    this.album,
   });
 
   static Future<Song> _fromAudioMetadata({
@@ -323,7 +350,7 @@ class Song extends Equatable {
       artUri: cover != null ? Uri.file(cover!) : null,
       duration: duration,
       genre: genres.isNotEmpty ? genres.join(', ') : null,
-      album: await album.then((album) => album.title),
+      album: await getAlbum().then((album) => album.title),
       extras: {
         'path': path,
         'source': source.toString(),
@@ -400,6 +427,8 @@ class Song extends Equatable {
     int? playCount,
     DateTime? dateAdded,
     DateTime? lastPlayed,
+    Album? album,
+    List<Artist>? artists,
   }) {
     return Song(
       id: id ?? this.id,
@@ -422,6 +451,8 @@ class Song extends Equatable {
       playCount: playCount ?? this.playCount,
       dateAdded: dateAdded ?? this.dateAdded,
       lastPlayed: lastPlayed ?? this.lastPlayed,
+      artists: artists ?? this.artists,
+      album: album ?? this.album,
     );
   }
 
@@ -433,14 +464,17 @@ class Song extends Equatable {
     return copyWith(rating: newRating.clamp(0.0, 5.0));
   }
 
-  Future<List<Artist>> get artists async {
+  Future<List<Artist>> getArtists() async {
+    if (artists != null && artists!.isNotEmpty) {
+      return artists!;
+    }
     return DatabaseHelper().songArtistProvider
         .getArtistsBySongId(id ?? 0)
         .then((artists) => artists.isNotEmpty ? artists : [Artist.empty()]);
   }
 
-  Future<String> get artist async {
-    return artists.then(
+  Future<String> get artist {
+    return getArtists().then(
       (artists) =>
           artists.isNotEmpty
               ? artists.map((a) => a.name).join(', ')
@@ -448,10 +482,15 @@ class Song extends Equatable {
     );
   }
 
-  Future<Album> get album async {
-    if (id == null) return Album.empty();
+  Future<Album> getAlbum() async {
+    if (album != null) {
+      return album!;
+    }
+    if (albumId == null || albumId == 0) {
+      return Album.empty();
+    }
     return DatabaseHelper().albumProvider
-        .get(albumId)
+        .getById(albumId ?? 0)
         .then((album) => album ?? Album.empty());
   }
 
@@ -484,28 +523,8 @@ class Song extends Equatable {
   }
 }
 
-class SongWithAlbumAndArtists extends Equatable {
-  final Song song;
-  final Album album;
-  final List<Artist> artists;
-
-  const SongWithAlbumAndArtists({
-    required this.song,
-    required this.album,
-    required this.artists,
-  });
-
-  @override
-  List<Object?> get props => [song, album, artists];
-
-  @override
-  String toString() {
-    return 'SongWithAlbumAndArtists(song: $song, album: $album, artists: $artists)';
-  }
-}
-
-class SongProvider extends CrudProvider<Song> {
-  SongProvider(super.db);
+class SongProvider extends BaseProvider<Song> {
+  SongProvider({super.db, super.dbWrapper});
 
   static Future<void> createTable(Database db) async {
     await db.execute('''
@@ -542,6 +561,9 @@ class SongProvider extends CrudProvider<Song> {
   String get idColumnName => SongColumns.id;
 
   @override
+  List<String> get columns => SongColumns.allColumns;
+
+  @override
   Map<String, dynamic> itemToMap(Song item) {
     return item.toMap();
   }
@@ -563,13 +585,6 @@ class SongProvider extends CrudProvider<Song> {
   }
 
   @override
-  Future<List<Song>> getAll() {
-    return db.query(SongColumns.table).then((maps) {
-      return Future.wait(maps.map((map) => Song.fromMap(map)).toList());
-    });
-  }
-
-  @override
   Song copyWithId(Song item, int? id) {
     return item.copyWith(id: id);
   }
@@ -579,7 +594,7 @@ class SongProvider extends CrudProvider<Song> {
     return Song.fromMap(map);
   }
 
-  Future<SongWithAlbumAndArtists?> getSongWithDetails(int songId) async {
+  Future<Song?> getSongWithDetails(int songId) async {
     // Get song with album data in one query
     final songMaps = await db.rawQuery(
       '''
@@ -588,7 +603,7 @@ class SongProvider extends CrudProvider<Song> {
         a.${AlbumColumns.id} as album_id,
         a.${AlbumColumns.title} as album_title,
         a.${AlbumColumns.coverUri} as album_cover_uri,
-        a.${AlbumColumns.year} as album_year
+        a.${AlbumColumns.releaseDate} as album_year
       FROM ${SongColumns.table} s
       LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
       WHERE s.${SongColumns.id} = ?
@@ -608,7 +623,7 @@ class SongProvider extends CrudProvider<Song> {
               id: songMap['album_id'] as int?,
               title: songMap['album_title'] as String? ?? 'Unknown Album',
               coverUri: songMap['album_cover_uri'] as String?,
-              year:
+              releaseDate:
                   songMap['album_year'] != null
                       ? DateTime.parse(songMap['album_year'] as String)
                       : null,
@@ -632,24 +647,23 @@ class SongProvider extends CrudProvider<Song> {
             ? artistMaps.map((map) => Artist.fromMap(map)).toList()
             : [Artist.empty()];
 
-    return SongWithAlbumAndArtists(song: song, album: album, artists: artists);
+    return song.copyWith(album: album, artists: artists);
   }
 
-  Future<List<SongWithAlbumAndArtists>> getAllSongsWithDetails() async {
-    // Get all songs with their album and artist data
+  Future<List<Song>> getAllSongsWithDetails() async {
     final songMaps = await db.rawQuery('''
       SELECT DISTINCT
         s.*,
         a.${AlbumColumns.id} as album_id,
         a.${AlbumColumns.title} as album_title,
         a.${AlbumColumns.coverUri} as album_cover_uri,
-        a.${AlbumColumns.year} as album_year
+        a.${AlbumColumns.releaseDate} as album_year
       FROM ${SongColumns.table} s
       LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
       ORDER BY s.${SongColumns.title}
     ''');
 
-    List<SongWithAlbumAndArtists> results = [];
+    List<Song> results = [];
 
     for (final songMap in songMaps) {
       final song = await Song.fromMap(songMap);
@@ -660,7 +674,7 @@ class SongProvider extends CrudProvider<Song> {
                 id: songMap['album_id'] as int?,
                 title: songMap['album_title'] as String? ?? 'Unknown Album',
                 coverUri: songMap['album_cover_uri'] as String?,
-                year:
+                releaseDate:
                     songMap['album_year'] != null
                         ? DateTime.parse(songMap['album_year'] as String)
                         : null,
@@ -684,17 +698,13 @@ class SongProvider extends CrudProvider<Song> {
               ? artistMaps.map((map) => Artist.fromMap(map)).toList()
               : [Artist.empty()];
 
-      results.add(
-        SongWithAlbumAndArtists(song: song, album: album, artists: artists),
-      );
+      results.add(song.copyWith(album: album, artists: artists));
     }
 
     return results;
   }
 
-  Future<List<SongWithAlbumAndArtists>> getSongsByAlbumWithDetails(
-    int albumId,
-  ) async {
+  Future<List<Song>> getSongsByAlbumWithDetails(int albumId) async {
     final songMaps = await db.rawQuery(
       '''
       SELECT 
@@ -702,7 +712,7 @@ class SongProvider extends CrudProvider<Song> {
         a.${AlbumColumns.id} as album_id,
         a.${AlbumColumns.title} as album_title,
         a.${AlbumColumns.coverUri} as album_cover_uri,
-        a.${AlbumColumns.year} as album_year
+        a.${AlbumColumns.releaseDate} as album_year
       FROM ${SongColumns.table} s
       LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
       WHERE s.${SongColumns.albumId} = ?
@@ -711,7 +721,7 @@ class SongProvider extends CrudProvider<Song> {
       [albumId],
     );
 
-    List<SongWithAlbumAndArtists> results = [];
+    List<Song> results = [];
 
     for (final songMap in songMaps) {
       final song = await Song.fromMap(songMap);
@@ -720,7 +730,7 @@ class SongProvider extends CrudProvider<Song> {
         id: songMap['album_id'] as int?,
         title: songMap['album_title'] as String? ?? 'Unknown Album',
         coverUri: songMap['album_cover_uri'] as String?,
-        year:
+        releaseDate:
             songMap['album_year'] != null
                 ? DateTime.parse(songMap['album_year'] as String)
                 : null,
@@ -742,17 +752,13 @@ class SongProvider extends CrudProvider<Song> {
               ? artistMaps.map((map) => Artist.fromMap(map)).toList()
               : [Artist.empty()];
 
-      results.add(
-        SongWithAlbumAndArtists(song: song, album: album, artists: artists),
-      );
+      results.add(song.copyWith(album: album, artists: artists));
     }
 
     return results;
   }
 
-  Future<List<SongWithAlbumAndArtists>> getSongsByArtistWithDetails(
-    int artistId,
-  ) async {
+  Future<List<Song>> getSongsByArtistWithDetails(int artistId) async {
     final songMaps = await db.rawQuery(
       '''
       SELECT DISTINCT
@@ -760,7 +766,7 @@ class SongProvider extends CrudProvider<Song> {
         a.${AlbumColumns.id} as album_id,
         a.${AlbumColumns.title} as album_title,
         a.${AlbumColumns.coverUri} as album_cover_uri,
-        a.${AlbumColumns.year} as album_year
+        a.${AlbumColumns.releaseDate} as album_year
       FROM ${SongColumns.table} s
       LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
       INNER JOIN ${SongArtistColumns.table} sa ON s.${SongColumns.id} = sa.${SongArtistColumns.songId}
@@ -770,7 +776,7 @@ class SongProvider extends CrudProvider<Song> {
       [artistId],
     );
 
-    List<SongWithAlbumAndArtists> results = [];
+    List<Song> results = [];
 
     for (final songMap in songMaps) {
       final song = await Song.fromMap(songMap);
@@ -781,7 +787,7 @@ class SongProvider extends CrudProvider<Song> {
                 id: songMap['album_id'] as int?,
                 title: songMap['album_title'] as String? ?? 'Unknown Album',
                 coverUri: songMap['album_cover_uri'] as String?,
-                year:
+                releaseDate:
                     songMap['album_year'] != null
                         ? DateTime.parse(songMap['album_year'] as String)
                         : null,
@@ -804,17 +810,13 @@ class SongProvider extends CrudProvider<Song> {
               ? artistMaps.map((map) => Artist.fromMap(map)).toList()
               : [Artist.empty()];
 
-      results.add(
-        SongWithAlbumAndArtists(song: song, album: album, artists: artists),
-      );
+      results.add(song.copyWith(album: album, artists: artists));
     }
 
     return results;
   }
 
-  Future<List<SongWithAlbumAndArtists>> searchSongsWithDetails(
-    String query,
-  ) async {
+  Future<List<Song>> searchSongsWithDetails(String query) async {
     final songMaps = await db.rawQuery(
       '''
       SELECT DISTINCT
@@ -822,7 +824,7 @@ class SongProvider extends CrudProvider<Song> {
         a.${AlbumColumns.id} as album_id,
         a.${AlbumColumns.title} as album_title,
         a.${AlbumColumns.coverUri} as album_cover_uri,
-        a.${AlbumColumns.year} as album_year
+        a.${AlbumColumns.releaseDate} as album_year
       FROM ${SongColumns.table} s
       LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
       LEFT JOIN ${SongArtistColumns.table} sa ON s.${SongColumns.id} = sa.${SongArtistColumns.songId}
@@ -836,7 +838,7 @@ class SongProvider extends CrudProvider<Song> {
       ['%$query%', '%$query%', '%$query%', '%$query%'],
     );
 
-    List<SongWithAlbumAndArtists> results = [];
+    List<Song> results = [];
 
     for (final songMap in songMaps) {
       final song = await Song.fromMap(songMap);
@@ -847,7 +849,7 @@ class SongProvider extends CrudProvider<Song> {
                 id: songMap['album_id'] as int?,
                 title: songMap['album_title'] as String? ?? 'Unknown Album',
                 coverUri: songMap['album_cover_uri'] as String?,
-                year:
+                releaseDate:
                     songMap['album_year'] != null
                         ? DateTime.parse(songMap['album_year'] as String)
                         : null,
@@ -870,9 +872,7 @@ class SongProvider extends CrudProvider<Song> {
               ? artistMaps.map((map) => Artist.fromMap(map)).toList()
               : [Artist.empty()];
 
-      results.add(
-        SongWithAlbumAndArtists(song: song, album: album, artists: artists),
-      );
+      results.add(song.copyWith(album: album, artists: artists));
     }
 
     return results;
