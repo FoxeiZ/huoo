@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/artist.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -11,40 +12,47 @@ class AlbumColumns {
   static const String id = 'id';
   static const String title = 'title';
   static const String coverUri = 'cover_uri';
-  static const String year = 'year';
+  static const String releaseDate = 'release_date';
+
+  static List<String> get allColumns => [id, title, coverUri, releaseDate];
 }
 
 class Album extends Equatable {
   final int? id;
   final String title;
   final String? coverUri;
-  final DateTime? year;
+  final DateTime? releaseDate;
 
-  const Album({this.id, required this.title, this.coverUri, this.year});
+  const Album({this.id, required this.title, this.coverUri, this.releaseDate});
 
   factory Album.empty() {
     return const Album(
       id: 0,
       title: 'Unknown Album',
       coverUri: null,
-      year: null,
+      releaseDate: null,
     );
   }
 
   @override
-  List<Object?> get props => [id, title, coverUri, year];
+  List<Object?> get props => [id, title, coverUri, releaseDate];
 
   @override
   String toString() {
-    return 'Album{id: $id, title: $title, coverUri: $coverUri, year: $year}';
+    return 'Album{id: $id, title: $title, coverUri: $coverUri, year: $releaseDate}';
   }
 
-  Album copyWith({int? id, String? title, String? coverUri, DateTime? year}) {
+  Album copyWith({
+    int? id,
+    String? title,
+    String? coverUri,
+    DateTime? releaseDate,
+  }) {
     return Album(
       id: id ?? this.id,
       title: title ?? this.title,
       coverUri: coverUri ?? this.coverUri,
-      year: year ?? this.year,
+      releaseDate: releaseDate ?? this.releaseDate,
     );
   }
 
@@ -53,7 +61,7 @@ class Album extends Equatable {
       AlbumColumns.id: id,
       AlbumColumns.title: title,
       AlbumColumns.coverUri: coverUri,
-      AlbumColumns.year: year?.toIso8601String(),
+      AlbumColumns.releaseDate: releaseDate?.toIso8601String(),
     };
   }
 
@@ -62,16 +70,16 @@ class Album extends Equatable {
       id: map[AlbumColumns.id] as int,
       title: map[AlbumColumns.title] as String,
       coverUri: map[AlbumColumns.coverUri] as String?,
-      year:
-          map[AlbumColumns.year] != null
-              ? DateTime.parse(map[AlbumColumns.year] as String)
+      releaseDate:
+          map[AlbumColumns.releaseDate] != null
+              ? DateTime.parse(map[AlbumColumns.releaseDate] as String)
               : null,
     );
   }
 }
 
-class AlbumProvider extends CrudProvider<Album> {
-  AlbumProvider(super.db);
+class AlbumProvider extends BaseProvider<Album> {
+  AlbumProvider({super.db, super.dbWrapper});
 
   @override
   String get tableName => AlbumColumns.table;
@@ -79,11 +87,14 @@ class AlbumProvider extends CrudProvider<Album> {
   @override
   String get idColumnName => AlbumColumns.id;
 
+  @override
+  List<String> get columns => AlbumColumns.allColumns;
+
   Future<Album> insertWithArtists(Album album, List<Artist> artists) async {
     final insertedAlbum = await insert(album);
 
     if (artists.isNotEmpty && insertedAlbum.id != null) {
-      final albumArtistProvider = AlbumArtistProvider(db);
+      final albumArtistProvider = DatabaseHelper().albumArtistProvider;
       for (final artist in artists) {
         final albumArtist = AlbumArtist(album: insertedAlbum, artist: artist);
         await albumArtistProvider.insert(albumArtist);
@@ -103,12 +114,6 @@ class AlbumProvider extends CrudProvider<Album> {
       return Album.fromMap(maps.first);
     }
     return null;
-  }
-
-  @override
-  Future<List<Album>> getAll() async {
-    final maps = await db.query(tableName);
-    return maps.map((map) => Album.fromMap(map)).toList();
   }
 
   @override
@@ -136,7 +141,7 @@ class AlbumProvider extends CrudProvider<Album> {
         ${AlbumColumns.id} INTEGER PRIMARY KEY AUTOINCREMENT,
         ${AlbumColumns.title} TEXT NOT NULL,
         ${AlbumColumns.coverUri} TEXT,
-        ${AlbumColumns.year} TEXT
+        ${AlbumColumns.releaseDate} TEXT
       )
     ''');
   }
