@@ -1,24 +1,120 @@
 import 'package:sqflite/sqflite.dart';
 
+import 'package:huoo/base/db/wrapper.dart';
+
 abstract class BaseProvider<T> {
-  static Future<void> createTable(Database db) {
-    throw UnimplementedError(
-      'createSongsTable needs to be implemented by a subclass',
+  late final DatabaseOperation _dbOperation;
+  DatabaseOperation get db => _dbOperation;
+
+  BaseProvider({Database? db, DatabaseOperation? dbWrapper}) {
+    if (dbWrapper != null) {
+      _dbOperation = dbWrapper;
+    } else if (db == null) {
+      throw ArgumentError('Database or DatabaseOperation must be provided');
+    } else {
+      if (db.isOpen == false) {
+        throw StateError('Database is not open');
+      }
+      _dbOperation = DatabaseWrapper(db);
+    }
+  }
+
+  static Future<void> createTable(Database db) async {
+    throw UnimplementedError('createTable must be implemented in subclasses');
+  }
+
+  static Future<void> dropTable(Database db) async {
+    throw UnimplementedError('createTable must be implemented in subclasses');
+  }
+
+  Future<T> insert(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final id = getItemId(item);
+    if (id != null && id != 0) {
+      throw ArgumentError('Item must not have a valid ID for insert');
+    }
+    return wrapper.insert(tableName, itemToMap(item)).then((id) {
+      return copyWithId(item, id);
+    });
+  }
+
+  Future<int> update(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final id = getItemId(item);
+    if (id == null) {
+      throw ArgumentError('Item must have a valid ID for update');
+    }
+    return wrapper.update(
+      tableName,
+      itemToMap(item),
+      where: '$idColumnName = ?',
+      whereArgs: [id],
     );
   }
 
-  static Future<void> dropTable(Database db) {
-    throw UnimplementedError(
-      'dropSongsTable needs to be implemented by a subclass',
-    );
+  Future<T> insertOrUpdate(T item, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final id = getItemId(item);
+    if (id != null && id != 0) {
+      final oldItem = getById(id, wrapper);
+      if (oldItem != item) return update(item, wrapper).then((_) => item);
+      return Future.value(item);
+    } else {
+      return insert(item, wrapper);
+    }
   }
 
-  Future<T> insert(T item);
-  Future<int> update(T item);
-  Future<int> delete(int id);
-  Future<int> deleteAll();
-  Future<T?> getById(int id);
-  Future<List<T>> getAll();
-  Future<T?> insertOrUpdate(T item);
-  Future<int> count();
+  Future<void> insertAll(List<T> items, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return Future.wait(items.map((item) => insert(item, wrapper)));
+  }
+
+  Future<int> count([DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper.count(tableName);
+  }
+
+  String get tableName;
+  String get idColumnName;
+
+  /// Dont include the ID column in this list when implementing.
+  List<String> get columns;
+  Map<String, dynamic> itemToMap(T item);
+  Future<T> itemFromMap(Map<String, dynamic> map);
+  T copyWithId(T item, int? id);
+  int? getItemId(T item);
+  Future<T?> queryFromItem(T item, [DatabaseOperation? dbWrapper]) async {
+    final wrapper = dbWrapper ?? _dbOperation;
+    final itemMap = itemToMap(item);
+    final nonNullColumns =
+        columns.where((col) => itemMap[col] != null).toList();
+    if (nonNullColumns.isEmpty) return null;
+
+    return wrapper
+        .query(
+          tableName,
+          where: nonNullColumns.map((col) => '$col = ?').join(' AND '),
+          whereArgs: nonNullColumns.map((col) => itemMap[col]).toList(),
+        )
+        .then((maps) => maps.isNotEmpty ? itemFromMap(maps.first) : null);
+  }
+
+  Future<List<T>> getAll([DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper.query(tableName).then((maps) {
+      return Future.wait(maps.map((map) => itemFromMap(map)).toList());
+    });
+  }
+
+  Future<T?> getById(int id, [DatabaseOperation? dbWrapper]) {
+    final wrapper = dbWrapper ?? _dbOperation;
+    return wrapper
+        .query(tableName, where: '$idColumnName = ?', whereArgs: [id])
+        .then((maps) {
+          if (maps.isNotEmpty) {
+            return itemFromMap(maps.first);
+          }
+          return null;
+        });
+  }
 }

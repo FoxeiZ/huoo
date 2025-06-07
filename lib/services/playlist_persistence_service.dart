@@ -62,10 +62,11 @@ class PlaylistPersistenceService {
       }
 
       final songsData = jsonDecode(playlistJson) as List;
-      final songs =
-          songsData
-              .map((songData) => Song.fromMap(songData as Map<String, dynamic>))
-              .toList();
+      final songs = await Future.wait(
+        songsData
+            .map((songData) => Song.fromMap(songData as Map<String, dynamic>))
+            .toList(),
+      );
 
       if (songs.isEmpty) {
         log('Saved playlist is empty');

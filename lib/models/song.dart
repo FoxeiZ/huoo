@@ -5,48 +5,73 @@ import 'package:audio_metadata_reader/audio_metadata_reader.dart'
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
+import 'package:huoo/models/artist.dart';
+import 'package:huoo/models/many/song_artist.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:huoo/base/db/provider.dart';
-import 'package:huoo/helpers/database_helper.dart';
+import 'package:huoo/helpers/database/helper.dart';
+import 'package:huoo/models/album.dart';
 
 enum AudioSourceEnum { local, api, asset }
 
-const String table = 'songs';
-const String columnId = 'id';
-const String columnPath = 'path';
-const String albumColumn = 'album';
-const String yearColumn = 'year';
-const String languageColumn = 'language';
-const String artistColumn = 'artist';
-const String performersColumn = 'performers';
-const String titleColumn = 'title';
-const String trackNumberColumn = 'track_number';
-const String trackTotalColumn = 'track_total';
-const String durationColumn = 'duration';
-const String genresColumn = 'genres';
-const String discNumberColumn = 'disc_number';
-const String totalDiscColumn = 'total_disc';
-const String lyricsColumn = 'lyrics';
-const String playCountColumn = 'play_count';
-const String dateAddedColumn = 'date_added';
-const String lastPlayedColumn = 'last_played';
-const String ratingColumn = 'rating';
-const String coverColumn = 'cover';
+class SongColumns {
+  static const String table = 'songs';
+  static const String id = 'id';
+  static const String path = 'path';
+  static const String albumId = 'album_id';
+  static const String year = 'year';
+  static const String language = 'language';
+  static const String performers = 'performers';
+  static const String title = 'title';
+  static const String trackNumber = 'track_number';
+  static const String trackTotal = 'track_total';
+  static const String duration = 'duration';
+  static const String genres = 'genres';
+  static const String discNumber = 'disc_number';
+  static const String totalDisc = 'total_disc';
+  static const String lyrics = 'lyrics';
+  static const String playCount = 'play_count';
+  static const String dateAdded = 'date_added';
+  static const String lastPlayed = 'last_played';
+  static const String rating = 'rating';
+  static const String cover = 'cover';
+
+  static List<String> get allColumns => [
+    id,
+    path,
+    albumId,
+    year,
+    language,
+    performers,
+    title,
+    trackNumber,
+    trackTotal,
+    duration,
+    genres,
+    discNumber,
+    totalDisc,
+    lyrics,
+    playCount,
+    dateAdded,
+    lastPlayed,
+    rating,
+    cover,
+  ];
+}
 
 class Song extends Equatable {
   final int? id;
   final String path;
   final AudioSourceEnum source;
   final String? cover;
-  // metadata
-  final String album;
+  final int? albumId;
   final DateTime? year;
   final String? language;
-  final String artist;
   final List<String> performers;
   final String title;
   final int trackNumber;
@@ -61,16 +86,18 @@ class Song extends Equatable {
   final int playCount;
   final DateTime? dateAdded;
   final DateTime? lastPlayed;
+  // extra model info
+  final List<Artist>? artists;
+  final Album? album;
 
   const Song({
     this.id,
     required this.path,
     this.source = AudioSourceEnum.local,
     this.cover,
-    required this.album,
+    this.albumId,
     this.year,
     this.language,
-    this.artist = 'Unknown Artist',
     this.performers = const [],
     this.title = 'Unknown Title',
     required this.trackNumber,
@@ -84,20 +111,20 @@ class Song extends Equatable {
     this.playCount = 0,
     this.dateAdded,
     this.lastPlayed,
+    this.artists,
+    this.album,
   });
 
-  factory Song._fromAudioMetadata({
+  static Future<Song> _fromAudioMetadata({
     required String path,
     required AudioSourceEnum source,
     required audio_metadata.AudioMetadata metadata,
-  }) {
+  }) async {
     return Song(
       path: path,
       source: source,
-      album: metadata.album ?? 'Unknown Album',
       year: metadata.year ?? DateTime.now(),
       language: metadata.language,
-      artist: metadata.artist ?? 'Unknown Artist',
       performers: metadata.performers,
       title: metadata.title ?? 'Unknown Title',
       trackNumber: metadata.trackNumber ?? 0,
@@ -148,7 +175,7 @@ class Song extends Equatable {
       return existingSong;
     }
 
-    var song = Song._fromAudioMetadata(
+    var song = await Song._fromAudioMetadata(
       path: filePath,
       source: AudioSourceEnum.local,
       metadata: metadata,
@@ -179,51 +206,50 @@ class Song extends Equatable {
     return Song.fromLocalFile(file.path);
   }
 
-  factory Song.fromMap(Map<String, dynamic> map) {
+  static Future<Song> fromMap(Map<String, dynamic> map) async {
     return Song(
-      id: map[columnId] as int?,
-      path: map[columnPath] as String,
-      album: map[albumColumn] as String? ?? 'Unknown Album',
+      id: map[SongColumns.id] as int?,
+      path: map[SongColumns.path] as String,
       year:
-          map[yearColumn] != null
-              ? DateTime.parse(map[yearColumn] as String)
+          map[SongColumns.year] != null
+              ? DateTime.parse(map[SongColumns.year] as String)
               : null,
-      language: map[languageColumn] as String?,
-      artist: map[artistColumn] as String? ?? 'Unknown Artist',
+      language: map[SongColumns.language] as String?,
+      albumId: map[SongColumns.albumId] as int?,
       performers:
-          (map[performersColumn] as String?)
+          (map[SongColumns.performers] as String?)
               ?.split(',')
               .map((e) => e.trim())
               .toList() ??
           [],
-      title: map[titleColumn] as String? ?? 'Unknown Title',
-      trackNumber: map[trackNumberColumn] as int? ?? 0,
-      trackTotal: map[trackTotalColumn] as int? ?? 0,
-      duration: Duration(milliseconds: map[durationColumn] as int? ?? 0),
+      title: map[SongColumns.title] as String? ?? 'Unknown Title',
+      trackNumber: map[SongColumns.trackNumber] as int? ?? 0,
+      trackTotal: map[SongColumns.trackTotal] as int? ?? 0,
+      duration: Duration(milliseconds: map[SongColumns.duration] as int? ?? 0),
       genres:
-          (map[genresColumn] as String?)
+          (map[SongColumns.genres] as String?)
               ?.split(',')
               .map((e) => e.trim())
               .toList() ??
           [],
-      discNumber: map[discNumberColumn] as int? ?? 0,
-      totalDisc: map[totalDiscColumn] as int? ?? 0,
-      lyrics: map[lyricsColumn] as String?,
-      playCount: map[playCountColumn] as int? ?? 0,
+      discNumber: map[SongColumns.discNumber] as int? ?? 0,
+      totalDisc: map[SongColumns.totalDisc] as int? ?? 0,
+      lyrics: map[SongColumns.lyrics] as String?,
+      playCount: map[SongColumns.playCount] as int? ?? 0,
       dateAdded:
-          map[dateAddedColumn] != null
-              ? DateTime.parse(map[dateAddedColumn] as String)
+          map[SongColumns.dateAdded] != null
+              ? DateTime.parse(map[SongColumns.dateAdded] as String)
               : null,
       lastPlayed:
-          map[lastPlayedColumn] != null
-              ? DateTime.parse(map[lastPlayedColumn] as String)
+          map[SongColumns.lastPlayed] != null
+              ? DateTime.parse(map[SongColumns.lastPlayed] as String)
               : null,
       source: AudioSourceEnum.local,
       rating:
-          map[ratingColumn] != null
-              ? (map[ratingColumn] as num).toDouble()
+          map[SongColumns.rating] != null
+              ? (map[SongColumns.rating] as num).toDouble()
               : 0.0,
-      cover: map[coverColumn] as String?,
+      cover: map[SongColumns.cover] as String?,
     );
   }
 
@@ -232,10 +258,8 @@ class Song extends Equatable {
       id: null,
       path: "",
       source: AudioSourceEnum.local,
-      album: 'Unknown Album',
       year: null,
       language: null,
-      artist: 'Unknown Artist',
       performers: const [],
       title: 'Unknown Title',
       trackNumber: 0,
@@ -254,37 +278,106 @@ class Song extends Equatable {
 
   Map<String, dynamic> toMap() {
     return {
-      columnId: id,
-      columnPath: path,
-      albumColumn: album,
-      yearColumn: year?.toIso8601String(),
-      languageColumn: language,
-      artistColumn: artist,
-      performersColumn: performers.join(', '),
-      titleColumn: title,
-      trackNumberColumn: trackNumber,
-      trackTotalColumn: trackTotal,
-      durationColumn: duration.inMilliseconds,
-      genresColumn: genres.join(', '),
-      discNumberColumn: discNumber,
-      totalDiscColumn: totalDisc,
-      lyricsColumn: lyrics,
-      playCountColumn: playCount,
-      dateAddedColumn: dateAdded?.toIso8601String(),
-      lastPlayedColumn: lastPlayed?.toIso8601String(),
-      ratingColumn: rating ?? 0.0,
-      coverColumn: cover,
+      SongColumns.id: id,
+      SongColumns.path: path,
+      SongColumns.year: year?.toIso8601String(),
+      SongColumns.albumId: albumId,
+      SongColumns.language: language,
+      SongColumns.performers: performers.join(', '),
+      SongColumns.title: title,
+      SongColumns.trackNumber: trackNumber,
+      SongColumns.trackTotal: trackTotal,
+      SongColumns.duration: duration.inMilliseconds,
+      SongColumns.genres: genres.join(', '),
+      SongColumns.discNumber: discNumber,
+      SongColumns.totalDisc: totalDisc,
+      SongColumns.lyrics: lyrics,
+      SongColumns.playCount: playCount,
+      SongColumns.dateAdded: dateAdded?.toIso8601String(),
+      SongColumns.lastPlayed: lastPlayed?.toIso8601String(),
+      SongColumns.rating: rating ?? 0.0,
+      SongColumns.cover: cover,
     };
   }
 
-  AudioSource toAudioSource() {
+  static Future<Song> fromMediaItem(MediaItem? mediaItem) async {
+    if (mediaItem == null) {
+      return Song.empty();
+    }
+    return Song(
+      id: int.tryParse(mediaItem.id),
+      title: mediaItem.title,
+      cover: mediaItem.artUri?.toFilePath(),
+      duration: mediaItem.duration ?? const Duration(seconds: 0),
+      genres: mediaItem.extras?['genres']?.toString().split(', ') ?? [],
+      albumId: mediaItem.extras?['albumId'] as int?,
+      path: mediaItem.extras?['path'] ?? '',
+      source:
+          mediaItem.extras?['source'] == 'AudioSourceEnum.local'
+              ? AudioSourceEnum.local
+              : mediaItem.extras?['source'] == 'AudioSourceEnum.api'
+              ? AudioSourceEnum.api
+              : AudioSourceEnum.asset,
+      year:
+          mediaItem.extras?['year'] != null
+              ? DateTime.tryParse(mediaItem.extras!['year'])
+              : null,
+      language: mediaItem.extras?['language'],
+      performers: mediaItem.extras?['performers']?.toString().split(', ') ?? [],
+      trackNumber: mediaItem.extras?['trackNumber'] ?? 0,
+      trackTotal: mediaItem.extras?['trackTotal'] ?? 0,
+      discNumber: mediaItem.extras?['discNumber'] ?? 0,
+      totalDisc: mediaItem.extras?['totalDisc'] ?? 0,
+      lyrics: mediaItem.extras?['lyrics'],
+      rating: (mediaItem.extras?['rating'] as num?)?.toDouble() ?? 0.0,
+      playCount: mediaItem.extras?['playCount'] ?? 0,
+      dateAdded:
+          mediaItem.extras?['dateAdded'] != null
+              ? DateTime.tryParse(mediaItem.extras!['dateAdded'])
+              : null,
+      lastPlayed:
+          mediaItem.extras?['lastPlayed'] != null
+              ? DateTime.tryParse(mediaItem.extras!['lastPlayed'])
+              : null,
+    );
+  }
+
+  Future<MediaItem> toMediaItem() async {
+    return MediaItem(
+      id: id?.toString() ?? path,
+      title: title,
+      artist: await artist,
+      artUri: cover != null ? Uri.file(cover!) : null,
+      duration: duration,
+      genre: genres.isNotEmpty ? genres.join(', ') : null,
+      album: await getAlbum().then((album) => album.title),
+      extras: {
+        'path': path,
+        'source': source.toString(),
+        'year': year?.year.toString(),
+        'language': language,
+        'performers': performers,
+        'trackNumber': trackNumber,
+        'trackTotal': trackTotal,
+        'discNumber': discNumber,
+        'totalDisc': totalDisc,
+        'lyrics': lyrics,
+        'rating': rating ?? 0.0,
+        'playCount': playCount,
+        'dateAdded': dateAdded?.toIso8601String(),
+        'lastPlayed': lastPlayed?.toIso8601String(),
+      },
+    );
+  }
+
+  Future<AudioSource> toAudioSource() async {
     switch (source) {
       case AudioSourceEnum.local:
-        return AudioSource.file(path, tag: this);
+        return AudioSource.file(path, tag: await toMediaItem());
       case AudioSourceEnum.api:
-        return AudioSource.uri(Uri.parse(path), tag: this);
+        return AudioSource.uri(Uri.parse(path), tag: await toMediaItem());
       case AudioSourceEnum.asset:
-        return AudioSource.asset(path, tag: this);
+        return AudioSource.asset(path, tag: await toMediaItem());
     }
   }
 
@@ -294,7 +387,6 @@ class Song extends Equatable {
 
   String get coverOrDefault => cover ?? 'assets/images/default_cover.png';
   String get displayDuration => _formatDuration(duration);
-  String get artistAlbum => '$artist • $album';
   String get genre => genres.isNotEmpty ? genres.join(', ') : 'Unknown Genre';
   String get formattedYear => year?.year.toString() ?? 'Unknown Year';
   String get performer =>
@@ -319,10 +411,9 @@ class Song extends Equatable {
     String? path,
     AudioSourceEnum? source,
     String? cover,
-    String? album,
+    int? albumId,
     DateTime? year,
     String? language,
-    String? artist,
     List<String>? performers,
     String? title,
     int? trackNumber,
@@ -336,16 +427,17 @@ class Song extends Equatable {
     int? playCount,
     DateTime? dateAdded,
     DateTime? lastPlayed,
+    Album? album,
+    List<Artist>? artists,
   }) {
     return Song(
       id: id ?? this.id,
       path: path ?? this.path,
       source: source ?? this.source,
       cover: cover ?? this.cover,
-      album: album ?? this.album,
+      albumId: albumId ?? this.albumId,
       year: year ?? this.year,
       language: language ?? this.language,
-      artist: artist ?? this.artist,
       performers: performers ?? this.performers,
       title: title ?? this.title,
       trackNumber: trackNumber ?? this.trackNumber,
@@ -359,6 +451,8 @@ class Song extends Equatable {
       playCount: playCount ?? this.playCount,
       dateAdded: dateAdded ?? this.dateAdded,
       lastPlayed: lastPlayed ?? this.lastPlayed,
+      artists: artists ?? this.artists,
+      album: album ?? this.album,
     );
   }
 
@@ -370,16 +464,44 @@ class Song extends Equatable {
     return copyWith(rating: newRating.clamp(0.0, 5.0));
   }
 
+  Future<List<Artist>> getArtists() async {
+    if (artists != null && artists!.isNotEmpty) {
+      return artists!;
+    }
+    return DatabaseHelper().songArtistProvider
+        .getArtistsBySongId(id ?? 0)
+        .then((artists) => artists.isNotEmpty ? artists : [Artist.empty()]);
+  }
+
+  Future<String> get artist {
+    return getArtists().then(
+      (artists) =>
+          artists.isNotEmpty
+              ? artists.map((a) => a.name).join(', ')
+              : 'Unknown',
+    );
+  }
+
+  Future<Album> getAlbum() async {
+    if (album != null) {
+      return album!;
+    }
+    if (albumId == null || albumId == 0) {
+      return Album.empty();
+    }
+    return DatabaseHelper().albumProvider
+        .getById(albumId ?? 0)
+        .then((album) => album ?? Album.empty());
+  }
+
   @override
   List<Object?> get props => [
     id,
     path,
     source,
     cover,
-    album,
     year,
     language,
-    artist,
     performers,
     title,
     trackNumber,
@@ -397,72 +519,62 @@ class Song extends Equatable {
 
   @override
   String toString() {
-    return 'Song(id: $id, title: $title, artist: $artist, album: $album)';
+    return 'Song(id: $id, title: $title)';
   }
 }
 
 class SongProvider extends BaseProvider<Song> {
-  final Database db;
-
-  SongProvider(this.db);
+  SongProvider({super.db, super.dbWrapper});
 
   static Future<void> createTable(Database db) async {
-    await db.execute('''CREATE TABLE $table (
-        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
-        $columnPath TEXT NOT NULL UNIQUE,
-        $albumColumn TEXT,
-        $yearColumn TEXT,
-        $languageColumn TEXT,
-        $artistColumn TEXT,
-        $performersColumn TEXT,
-        $titleColumn TEXT NOT NULL,
-        $trackNumberColumn INTEGER,
-        $trackTotalColumn INTEGER,
-        $durationColumn INTEGER NOT NULL,
-        $genresColumn TEXT,
-        $discNumberColumn INTEGER,
-        $totalDiscColumn INTEGER,
-        $lyricsColumn TEXT,
-        $playCountColumn INTEGER DEFAULT 0,
-        $dateAddedColumn TEXT DEFAULT CURRENT_TIMESTAMP,
-        $lastPlayedColumn TEXT,
-        $ratingColumn REAL DEFAULT 0.0,
-        $coverColumn TEXT
-      )''');
+    await db.execute('''
+      CREATE TABLE ${SongColumns.table} (
+        ${SongColumns.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+        ${SongColumns.path} TEXT NOT NULL UNIQUE,
+        ${SongColumns.albumId} INTEGER,
+        ${SongColumns.year} TEXT,
+        ${SongColumns.language} TEXT,
+        ${SongColumns.performers} TEXT,
+        ${SongColumns.title} TEXT NOT NULL,
+        ${SongColumns.trackNumber} INTEGER,
+        ${SongColumns.trackTotal} INTEGER,
+        ${SongColumns.duration} INTEGER NOT NULL,
+        ${SongColumns.genres} TEXT,
+        ${SongColumns.discNumber} INTEGER,
+        ${SongColumns.totalDisc} INTEGER,
+        ${SongColumns.lyrics} TEXT,
+        ${SongColumns.playCount} INTEGER DEFAULT 0,
+        ${SongColumns.dateAdded} TEXT DEFAULT CURRENT_TIMESTAMP,
+        ${SongColumns.lastPlayed} TEXT,
+        ${SongColumns.rating} REAL DEFAULT 0.0,
+        ${SongColumns.cover} TEXT,
+        FOREIGN KEY (${SongColumns.albumId}) REFERENCES ${AlbumColumns.table} (${AlbumColumns.id}) ON DELETE SET NULL
+    )''');
   }
 
   @override
-  Future<Song?> getById(int id) async {
-    List<Map<String, dynamic>> maps = await db.query(
-      table,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-
-    if (maps.isNotEmpty) {
-      return Song.fromMap(maps.first);
-    }
-    return null;
+  int? getItemId(Song item) {
+    return item.id;
   }
 
   @override
-  Future<Song?> insertOrUpdate(Song song) async {
-    var existing = await getById(song.id ?? -1);
-    if (existing != null) {
-      if (existing == song) {
-        return existing;
-      }
-      var newId = await update(song);
-      return song.copyWith(id: newId);
-    } else {
-      return insert(song);
-    }
+  String get idColumnName => SongColumns.id;
+
+  @override
+  List<String> get columns => SongColumns.allColumns;
+
+  @override
+  Map<String, dynamic> itemToMap(Song item) {
+    return item.toMap();
   }
+
+  @override
+  String get tableName => SongColumns.table;
 
   Future<Song?> getByPath(String path) async {
     List<Map<String, dynamic>> maps = await db.query(
-      table,
-      where: '$columnPath = ?',
+      SongColumns.table,
+      where: '${SongColumns.path} = ?',
       whereArgs: [path],
     );
 
@@ -473,45 +585,343 @@ class SongProvider extends BaseProvider<Song> {
   }
 
   @override
-  Future<Song> insert(Song song) async {
-    var id = await db.insert(table, song.toMap());
-    return song.copyWith(id: id);
+  Song copyWithId(Song item, int? id) {
+    return item.copyWith(id: id);
   }
 
   @override
-  Future<int> update(Song song) async {
-    return await db.update(
-      table,
-      song.toMap(),
-      where: '$columnId = ?',
-      whereArgs: [song.id],
+  Future<Song> itemFromMap(Map<String, dynamic> map) async {
+    return Song.fromMap(map);
+  }
+
+  Future<Song?> getSongWithDetails(int songId) async {
+    // Get song with album data in one query
+    final songMaps = await db.rawQuery(
+      '''
+      SELECT 
+        s.*,
+        a.${AlbumColumns.id} as album_id,
+        a.${AlbumColumns.title} as album_title,
+        a.${AlbumColumns.coverUri} as album_cover_uri,
+        a.${AlbumColumns.releaseDate} as album_year
+      FROM ${SongColumns.table} s
+      LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
+      WHERE s.${SongColumns.id} = ?
+    ''',
+      [songId],
     );
+
+    if (songMaps.isEmpty) return null;
+
+    final songMap = songMaps.first;
+    final song = await Song.fromMap(songMap);
+
+    // Build album from the joined data
+    final album =
+        songMap['album_id'] != null
+            ? Album(
+              id: songMap['album_id'] as int?,
+              title: songMap['album_title'] as String? ?? 'Unknown Album',
+              coverUri: songMap['album_cover_uri'] as String?,
+              releaseDate:
+                  songMap['album_year'] != null
+                      ? DateTime.parse(songMap['album_year'] as String)
+                      : null,
+            )
+            : Album.empty();
+
+    // Get artists for this song
+    final artistMaps = await db.rawQuery(
+      '''
+      SELECT ar.*
+      FROM ${ArtistColumns.table} ar
+      INNER JOIN ${SongArtistColumns.table} sa ON ar.${ArtistColumns.id} = sa.${SongArtistColumns.artistId}
+      WHERE sa.${SongArtistColumns.songId} = ?
+      ORDER BY ar.${ArtistColumns.name}
+    ''',
+      [songId],
+    );
+
+    final artists =
+        artistMaps.isNotEmpty
+            ? artistMaps.map((map) => Artist.fromMap(map)).toList()
+            : [Artist.empty()];
+
+    return song.copyWith(album: album, artists: artists);
   }
 
-  @override
-  Future<int> delete(int id) async {
-    return await db.delete(table, where: '$columnId = ?', whereArgs: [id]);
+  Future<List<Song>> getAllSongsWithDetails() async {
+    final songMaps = await db.rawQuery('''
+      SELECT DISTINCT
+        s.*,
+        a.${AlbumColumns.id} as album_id,
+        a.${AlbumColumns.title} as album_title,
+        a.${AlbumColumns.coverUri} as album_cover_uri,
+        a.${AlbumColumns.releaseDate} as album_year
+      FROM ${SongColumns.table} s
+      LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
+      ORDER BY s.${SongColumns.title}
+    ''');
+
+    List<Song> results = [];
+
+    for (final songMap in songMaps) {
+      final song = await Song.fromMap(songMap);
+
+      final album =
+          songMap['album_id'] != null
+              ? Album(
+                id: songMap['album_id'] as int?,
+                title: songMap['album_title'] as String? ?? 'Unknown Album',
+                coverUri: songMap['album_cover_uri'] as String?,
+                releaseDate:
+                    songMap['album_year'] != null
+                        ? DateTime.parse(songMap['album_year'] as String)
+                        : null,
+              )
+              : Album.empty();
+
+      // Get artists for this song
+      final artistMaps = await db.rawQuery(
+        '''
+        SELECT ar.*
+        FROM ${ArtistColumns.table} ar
+        INNER JOIN ${SongArtistColumns.table} sa ON ar.${ArtistColumns.id} = sa.${SongArtistColumns.artistId}
+        WHERE sa.${SongArtistColumns.songId} = ?
+        ORDER BY ar.${ArtistColumns.name}
+      ''',
+        [song.id],
+      );
+
+      final artists =
+          artistMaps.isNotEmpty
+              ? artistMaps.map((map) => Artist.fromMap(map)).toList()
+              : [Artist.empty()];
+
+      results.add(song.copyWith(album: album, artists: artists));
+    }
+
+    return results;
   }
 
-  @override
-  Future<int> count() {
-    return db.rawQuery('SELECT COUNT(*) FROM $table').then((value) {
-      if (value.isNotEmpty) {
-        return Sqflite.firstIntValue(value) ?? 0;
-      }
-      return 0;
-    });
+  Future<List<Song>> getSongsByAlbumWithDetails(int albumId) async {
+    final songMaps = await db.rawQuery(
+      '''
+      SELECT 
+        s.*,
+        a.${AlbumColumns.id} as album_id,
+        a.${AlbumColumns.title} as album_title,
+        a.${AlbumColumns.coverUri} as album_cover_uri,
+        a.${AlbumColumns.releaseDate} as album_year
+      FROM ${SongColumns.table} s
+      LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
+      WHERE s.${SongColumns.albumId} = ?
+      ORDER BY s.${SongColumns.trackNumber}, s.${SongColumns.title}
+    ''',
+      [albumId],
+    );
+
+    List<Song> results = [];
+
+    for (final songMap in songMaps) {
+      final song = await Song.fromMap(songMap);
+
+      final album = Album(
+        id: songMap['album_id'] as int?,
+        title: songMap['album_title'] as String? ?? 'Unknown Album',
+        coverUri: songMap['album_cover_uri'] as String?,
+        releaseDate:
+            songMap['album_year'] != null
+                ? DateTime.parse(songMap['album_year'] as String)
+                : null,
+      );
+
+      final artistMaps = await db.rawQuery(
+        '''
+        SELECT ar.*
+        FROM ${ArtistColumns.table} ar
+        INNER JOIN ${SongArtistColumns.table} sa ON ar.${ArtistColumns.id} = sa.${SongArtistColumns.artistId}
+        WHERE sa.${SongArtistColumns.songId} = ?
+        ORDER BY ar.${ArtistColumns.name}
+      ''',
+        [song.id],
+      );
+
+      final artists =
+          artistMaps.isNotEmpty
+              ? artistMaps.map((map) => Artist.fromMap(map)).toList()
+              : [Artist.empty()];
+
+      results.add(song.copyWith(album: album, artists: artists));
+    }
+
+    return results;
   }
 
-  @override
-  Future<int> deleteAll() {
-    return db.delete(table);
+  Future<List<Song>> getSongsByArtistWithDetails(int artistId) async {
+    final songMaps = await db.rawQuery(
+      '''
+      SELECT DISTINCT
+        s.*,
+        a.${AlbumColumns.id} as album_id,
+        a.${AlbumColumns.title} as album_title,
+        a.${AlbumColumns.coverUri} as album_cover_uri,
+        a.${AlbumColumns.releaseDate} as album_year
+      FROM ${SongColumns.table} s
+      LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
+      INNER JOIN ${SongArtistColumns.table} sa ON s.${SongColumns.id} = sa.${SongArtistColumns.songId}
+      WHERE sa.${SongArtistColumns.artistId} = ?
+      ORDER BY s.${SongColumns.title}
+    ''',
+      [artistId],
+    );
+
+    List<Song> results = [];
+
+    for (final songMap in songMaps) {
+      final song = await Song.fromMap(songMap);
+
+      final album =
+          songMap['album_id'] != null
+              ? Album(
+                id: songMap['album_id'] as int?,
+                title: songMap['album_title'] as String? ?? 'Unknown Album',
+                coverUri: songMap['album_cover_uri'] as String?,
+                releaseDate:
+                    songMap['album_year'] != null
+                        ? DateTime.parse(songMap['album_year'] as String)
+                        : null,
+              )
+              : Album.empty();
+
+      final artistMaps = await db.rawQuery(
+        '''
+        SELECT ar.*
+        FROM ${ArtistColumns.table} ar
+        INNER JOIN ${SongArtistColumns.table} sa ON ar.${ArtistColumns.id} = sa.${SongArtistColumns.artistId}
+        WHERE sa.${SongArtistColumns.songId} = ?
+        ORDER BY ar.${ArtistColumns.name}
+      ''',
+        [song.id],
+      );
+
+      final artists =
+          artistMaps.isNotEmpty
+              ? artistMaps.map((map) => Artist.fromMap(map)).toList()
+              : [Artist.empty()];
+
+      results.add(song.copyWith(album: album, artists: artists));
+    }
+
+    return results;
   }
 
-  @override
-  Future<List<Song>> getAll() {
-    return db.query(table).then((maps) {
-      return maps.map((map) => Song.fromMap(map)).toList();
-    });
+  Future<List<Song>> searchSongsWithDetails(String query) async {
+    final songMaps = await db.rawQuery(
+      '''
+      SELECT DISTINCT
+        s.*,
+        a.${AlbumColumns.id} as album_id,
+        a.${AlbumColumns.title} as album_title,
+        a.${AlbumColumns.coverUri} as album_cover_uri,
+        a.${AlbumColumns.releaseDate} as album_year
+      FROM ${SongColumns.table} s
+      LEFT JOIN ${AlbumColumns.table} a ON s.${SongColumns.albumId} = a.${AlbumColumns.id}
+      LEFT JOIN ${SongArtistColumns.table} sa ON s.${SongColumns.id} = sa.${SongArtistColumns.songId}
+      LEFT JOIN ${ArtistColumns.table} ar ON sa.${SongArtistColumns.artistId} = ar.${ArtistColumns.id}
+      WHERE s.${SongColumns.title} LIKE ? 
+         OR a.${AlbumColumns.title} LIKE ?
+         OR ar.${ArtistColumns.name} LIKE ?
+         OR s.${SongColumns.genres} LIKE ?
+      ORDER BY s.${SongColumns.title}
+    ''',
+      ['%$query%', '%$query%', '%$query%', '%$query%'],
+    );
+
+    List<Song> results = [];
+
+    for (final songMap in songMaps) {
+      final song = await Song.fromMap(songMap);
+
+      final album =
+          songMap['album_id'] != null
+              ? Album(
+                id: songMap['album_id'] as int?,
+                title: songMap['album_title'] as String? ?? 'Unknown Album',
+                coverUri: songMap['album_cover_uri'] as String?,
+                releaseDate:
+                    songMap['album_year'] != null
+                        ? DateTime.parse(songMap['album_year'] as String)
+                        : null,
+              )
+              : Album.empty();
+
+      final artistMaps = await db.rawQuery(
+        '''
+        SELECT ar.*
+        FROM ${ArtistColumns.table} ar
+        INNER JOIN ${SongArtistColumns.table} sa ON ar.${ArtistColumns.id} = sa.${SongArtistColumns.artistId}
+        WHERE sa.${SongArtistColumns.songId} = ?
+        ORDER BY ar.${ArtistColumns.name}
+      ''',
+        [song.id],
+      );
+
+      final artists =
+          artistMaps.isNotEmpty
+              ? artistMaps.map((map) => Artist.fromMap(map)).toList()
+              : [Artist.empty()];
+
+      results.add(song.copyWith(album: album, artists: artists));
+    }
+
+    return results;
   }
+
+  // // Batch operations for better performance
+  // Future<List<SongWithAlbumAndArtists>> insertBatchWithDetails(
+  //   List<Song> songs,
+  //   List<Album> albums,
+  //   List<Artist> artists,
+  //   List<Map<String, int>> relationships,
+  // ) async {
+  //   return await db.transaction((txn) async {
+  //     final songProvider = SongProvider(txn);
+  //     final albumProvider = AlbumProvider(txn);
+  //     final artistProvider = ArtistProvider(txn);
+  //     final songArtistProvider = SongArtistProvider(txn);
+
+  //     // Insert all entities
+  //     final insertedSongs = await Future.wait(
+  //       songs.map((song) => songProvider.insert(song)),
+  //     );
+  //     final insertedAlbums = await Future.wait(
+  //       albums.map((album) => albumProvider.insert(album)),
+  //     );
+  //     final insertedArtists = await Future.wait(
+  //       artists.map((artist) => artistProvider.insert(artist)),
+  //     );
+
+  //     // Insert relationships
+  //     for (final relationship in relationships) {
+  //       final songId = relationship['songId'];
+  //       final artistId = relationship['artistId'];
+  //       if (songId != null && artistId != null) {
+  //         await songArtistProvider.insert(
+  //           SongArtist(
+  //             song: insertedSongs.firstWhere((s) => s.id == songId),
+  //             artist: insertedArtists.firstWhere((a) => a.id == artistId),
+  //           ),
+  //         );
+  //       }
+  //     }
+
+  //     // Return combined results
+  //     return Future.wait(
+  //       insertedSongs.map((song) => getSongWithDetails(song.id!)),
+  //     ).then(
+  //       (results) => results.whereType<SongWithAlbumAndArtists>().toList(),
+  //     );
+  //   });
+  // }
 }

@@ -7,7 +7,14 @@ sealed class AudioPlayerState extends Equatable {
   List<Object> get props => [];
 }
 
-final class AudioPlayerInitial extends AudioPlayerState {}
+final class AudioPlayerInitial extends AudioPlayerState {
+  final bool isRestored;
+
+  const AudioPlayerInitial({this.isRestored = false});
+
+  @override
+  List<Object> get props => [isRestored];
+}
 
 class AudioPlayerLoading extends AudioPlayerState {}
 
