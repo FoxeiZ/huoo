@@ -12,7 +12,12 @@ class HomeTab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color.fromRGBO(134, 200, 194, 1).withAlpha(153), // 0.6 opacity
+              const Color.fromRGBO(
+                134,
+                200,
+                194,
+                1,
+              ).withAlpha(153), // 0.6 opacity
               const Color(0xFF7BEEFF).withAlpha(10), // 0.04 opacity
               Colors.grey.shade900.withAlpha(128), // 0.5 opacity
             ],
@@ -30,7 +35,11 @@ class HomeTab extends StatelessWidget {
                     CircleAvatar(
                       radius: 20,
                       backgroundColor: const Color.fromRGBO(134, 200, 194, 1),
-                      child: const Icon(Icons.person, color: Colors.white, size: 24),
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -60,7 +69,10 @@ class HomeTab extends StatelessWidget {
                       onPressed: () {},
                     ),
                     IconButton(
-                      icon: const Icon(Icons.notifications, color: Colors.white),
+                      icon: const Icon(
+                        Icons.notifications,
+                        color: Colors.white,
+                      ),
                       onPressed: () {},
                     ),
                     IconButton(
@@ -182,7 +194,9 @@ class HomeTab extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 100), // Bottom padding for navigation
+                      const SizedBox(
+                        height: 100,
+                      ), // Bottom padding for navigation
                     ],
                   ),
                 ),
@@ -293,7 +307,10 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -308,7 +325,9 @@ class HomeTab extends StatelessWidget {
         color: color.withAlpha(77), // 0.3 opacity
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(child: Icon(Icons.album, color: Colors.white54, size: 40)),
+      child: const Center(
+        child: Icon(Icons.album, color: Colors.white54, size: 40),
+      ),
     );
   }
 }

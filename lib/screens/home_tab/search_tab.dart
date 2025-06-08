@@ -12,7 +12,12 @@ class SearchTab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color.fromRGBO(134, 200, 194, 1).withAlpha(153), // 0.6 opacity
+              const Color.fromRGBO(
+                134,
+                200,
+                194,
+                1,
+              ).withAlpha(153), // 0.6 opacity
               const Color(0xFF7BEEFF).withAlpha(102), // 0.4 opacity
               Colors.grey.shade900.withAlpha(255), // Fully opaque
             ],
@@ -221,7 +226,10 @@ class SearchTab extends StatelessWidget {
               children: [
                 if (hasLabel)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(4),
