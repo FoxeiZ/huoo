@@ -12,9 +12,9 @@ class HomeTab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromRGBO(134, 200, 194, 0.6),
-              Color(0xFF7BEEFF).withOpacity(0.4),
-              Colors.grey.shade900,
+              const Color.fromRGBO(134, 200, 194, 1).withAlpha(153), // 0.6 opacity
+              const Color(0xFF7BEEFF).withAlpha(10), // 0.04 opacity
+              Colors.grey.shade900.withAlpha(128), // 0.5 opacity
             ],
             stops: [0.0, 0.25, 0.5],
           ),
@@ -29,14 +29,14 @@ class HomeTab extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor: Color.fromRGBO(134, 200, 194, 1),
-                      child: Icon(Icons.person, color: Colors.white, size: 24),
+                      backgroundColor: const Color.fromRGBO(134, 200, 194, 1),
+                      child: const Icon(Icons.person, color: Colors.white, size: 24),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: const [
                           Text(
                             "Welcome back !",
                             style: TextStyle(
@@ -56,15 +56,15 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.bar_chart, color: Colors.white),
+                      icon: const Icon(Icons.bar_chart, color: Colors.white),
                       onPressed: () {},
                     ),
                     IconButton(
-                      icon: Icon(Icons.notifications, color: Colors.white),
+                      icon: const Icon(Icons.notifications, color: Colors.white),
                       onPressed: () {},
                     ),
                     IconButton(
-                      icon: Icon(Icons.settings, color: Colors.white),
+                      icon: const Icon(Icons.settings, color: Colors.white),
                       onPressed: () {},
                     ),
                   ],
@@ -74,14 +74,14 @@ class HomeTab extends StatelessWidget {
               // Content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
                       // Continue Listening Section
-                      Text(
+                      const Text(
                         "Continue Listening",
                         style: TextStyle(
                           fontSize: 20,
@@ -89,12 +89,12 @@ class HomeTab extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       // Continue Listening Grid
                       GridView.count(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 2,
                         childAspectRatio: 2.5,
                         crossAxisSpacing: 12,
@@ -128,10 +128,10 @@ class HomeTab extends StatelessWidget {
                         ],
                       ),
 
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
                       // Your Top Mixes Section
-                      Text(
+                      const Text(
                         "Your Top Mixes",
                         style: TextStyle(
                           fontSize: 20,
@@ -139,7 +139,7 @@ class HomeTab extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       SizedBox(
                         height: 180,
@@ -147,18 +147,18 @@ class HomeTab extends StatelessWidget {
                           scrollDirection: Axis.horizontal,
                           children: [
                             _buildTopMixItem("Pop Mix", Colors.red),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             _buildTopMixItem("Chill Mix", Colors.blue),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             _buildTopMixItem("Rock Mix", Colors.green),
                           ],
                         ),
                       ),
 
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
                       // Based on recent listening
-                      Text(
+                      const Text(
                         "Based on your recent listening",
                         style: TextStyle(
                           fontSize: 20,
@@ -166,7 +166,7 @@ class HomeTab extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       SizedBox(
                         height: 160,
@@ -174,15 +174,15 @@ class HomeTab extends StatelessWidget {
                           scrollDirection: Axis.horizontal,
                           children: [
                             _buildRecentItem(Colors.orange),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             _buildRecentItem(Colors.purple),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             _buildRecentItem(Colors.teal),
                           ],
                         ),
                       ),
 
-                      SizedBox(height: 100), // Bottom padding for navigation
+                      const SizedBox(height: 100), // Bottom padding for navigation
                     ],
                   ),
                 ),
@@ -201,7 +201,7 @@ class HomeTab extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha(102), // 0.4 opacity
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -211,7 +211,7 @@ class HomeTab extends StatelessWidget {
             height: double.infinity,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 bottomLeft: Radius.circular(8),
               ),
@@ -219,21 +219,21 @@ class HomeTab extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
                     ),
                   ),
                   if (isReleased)
-                    Text(
+                    const Text(
                       "RELEASED",
                       style: TextStyle(
                         color: Colors.green,
@@ -266,7 +266,7 @@ class HomeTab extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Icon(
+                  child: const Icon(
                     Icons.music_note,
                     color: Colors.white54,
                     size: 40,
@@ -280,7 +280,7 @@ class HomeTab extends StatelessWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       color: accentColor,
-                      borderRadius: BorderRadius.only(
+                      borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(8),
                         bottomRight: Radius.circular(8),
                       ),
@@ -290,10 +290,10 @@ class HomeTab extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -305,10 +305,10 @@ class HomeTab extends StatelessWidget {
       width: 120,
       height: 160,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
+        color: color.withAlpha(77), // 0.3 opacity
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Center(child: Icon(Icons.album, color: Colors.white54, size: 40)),
+      child: const Center(child: Icon(Icons.album, color: Colors.white54, size: 40)),
     );
   }
 }

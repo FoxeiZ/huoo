@@ -12,9 +12,9 @@ class SearchTab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromRGBO(134, 200, 194, 0.6),
-              Color(0xFF7BEEFF).withOpacity(0.4),
-              Colors.grey.shade900,
+              const Color.fromRGBO(134, 200, 194, 1).withAlpha(153), // 0.6 opacity
+              const Color(0xFF7BEEFF).withAlpha(102), // 0.4 opacity
+              Colors.grey.shade900.withAlpha(255), // Fully opaque
             ],
             stops: [0.0, 0.25, 0.5],
           ),
@@ -32,13 +32,13 @@ class SearchTab extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Color.fromRGBO(134, 200, 194, 1),
+                        color: const Color.fromRGBO(134, 200, 194, 1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Image.asset('assets/huoo_logo.png'),
                     ),
-                    SizedBox(width: 12),
-                    Text(
+                    const SizedBox(width: 12),
+                    const Text(
                       "Search",
                       style: TextStyle(
                         fontSize: 24,
@@ -67,7 +67,7 @@ class SearchTab extends StatelessWidget {
                         color: Colors.grey.shade600,
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 15,
                       ),
@@ -76,17 +76,17 @@ class SearchTab extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
               // Content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Your Top Genres
-                      Text(
+                      const Text(
                         "Your Top Genres",
                         style: TextStyle(
                           fontSize: 20,
@@ -94,11 +94,11 @@ class SearchTab extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       GridView.count(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 2,
                         childAspectRatio: 1.8,
                         crossAxisSpacing: 12,
@@ -111,10 +111,10 @@ class SearchTab extends StatelessWidget {
                         ],
                       ),
 
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
                       // Browse All
-                      Text(
+                      const Text(
                         "Browse All",
                         style: TextStyle(
                           fontSize: 20,
@@ -122,11 +122,11 @@ class SearchTab extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       GridView.count(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 2,
                         childAspectRatio: 1.8,
                         crossAxisSpacing: 12,
@@ -148,7 +148,7 @@ class SearchTab extends StatelessWidget {
                         ],
                       ),
 
-                      SizedBox(height: 100), // Bottom padding
+                      const SizedBox(height: 100), // Bottom padding
                     ],
                   ),
                 ),
@@ -173,7 +173,7 @@ class SearchTab extends StatelessWidget {
             top: 12,
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -189,12 +189,12 @@ class SearchTab extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withAlpha(51), // 0.2 opacity
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.album,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withAlpha(204), // 0.8 opacity
                   size: 40,
                 ),
               ),
@@ -221,12 +221,12 @@ class SearchTab extends StatelessWidget {
               children: [
                 if (hasLabel)
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
+                    child: const Text(
                       "NEW",
                       style: TextStyle(
                         color: Colors.white,
@@ -235,10 +235,10 @@ class SearchTab extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (hasLabel) SizedBox(height: 4),
+                if (hasLabel) const SizedBox(height: 4),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -256,12 +256,12 @@ class SearchTab extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withAlpha(51), // 0.2 opacity
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.music_note,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withAlpha(204), // 0.8 opacity
                   size: 30,
                 ),
               ),

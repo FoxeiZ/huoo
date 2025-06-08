@@ -181,7 +181,7 @@ class SignIn extends StatelessWidget {
                         decoration: BoxDecoration(
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.6),
+                              color: theme.colorScheme.primary.withAlpha(153), // 0.6 opacity
                               blurRadius: 10.0,
                               spreadRadius: 5.0,
                             ),
