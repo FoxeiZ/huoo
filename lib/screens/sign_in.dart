@@ -9,7 +9,8 @@ class SignIn extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface, // Use background color from the theme
+      backgroundColor:
+          theme.colorScheme.surface, // Use background color from the theme
       body: Stack(
         children: [
           SafeArea(
@@ -17,7 +18,10 @@ class SignIn extends StatelessWidget {
               alignment: Alignment.topLeft,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                color: theme.colorScheme.onSurface, // Use text color from the theme
+                color:
+                    theme
+                        .colorScheme
+                        .onSurface, // Use text color from the theme
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -44,7 +48,10 @@ class SignIn extends StatelessWidget {
                 const SizedBox(height: 20.0),
                 Text(
                   "Let's get you in",
-                  style: theme.textTheme.headlineLarge, // Use headline1 from the theme
+                  style:
+                      theme
+                          .textTheme
+                          .headlineLarge, // Use headline1 from the theme
                 ),
                 const SizedBox(height: 20.0),
                 ConstrainedBox(
@@ -52,8 +59,12 @@ class SignIn extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surface, // Use surface color
-                      foregroundColor: theme.colorScheme.onSurface, // Use text color on surface
+                      backgroundColor:
+                          theme.colorScheme.surface, // Use surface color
+                      foregroundColor:
+                          theme
+                              .colorScheme
+                              .onSurface, // Use text color on surface
                       minimumSize: const Size.fromHeight(50),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -137,14 +148,23 @@ class SignIn extends StatelessWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
+                        child: Divider(
+                          thickness: 1,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('or', style: TextStyle(color: theme.colorScheme.onSurface)),
+                        child: Text(
+                          'or',
+                          style: TextStyle(color: theme.colorScheme.onSurface),
+                        ),
                       ),
                       Expanded(
-                        child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
+                        child: Divider(
+                          thickness: 1,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ],
                   ),

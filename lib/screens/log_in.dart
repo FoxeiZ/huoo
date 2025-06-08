@@ -44,7 +44,10 @@ class _LogInState extends State<LogIn> {
                     const SizedBox(height: 20.0),
                     Text(
                       "Login to your account",
-                      style: theme.textTheme.headlineLarge, // Use headlineLarge from the theme
+                      style:
+                          theme
+                              .textTheme
+                              .headlineLarge, // Use headlineLarge from the theme
                     ),
                     const SizedBox(height: 20.0),
                     SizedBox(
@@ -59,7 +62,9 @@ class _LogInState extends State<LogIn> {
                             ),
                           ),
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurface),
+                          labelStyle: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                          ),
                           filled: true,
                           fillColor: theme.colorScheme.surface,
                           prefixIcon: Icon(
@@ -88,7 +93,9 @@ class _LogInState extends State<LogIn> {
                             ),
                           ),
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: theme.colorScheme.onSurface),
+                          labelStyle: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                          ),
                           filled: true,
                           fillColor: theme.colorScheme.surface,
                           prefixIcon: Icon(
@@ -134,7 +141,9 @@ class _LogInState extends State<LogIn> {
                           ),
                           Text(
                             "Remember me",
-                            style: TextStyle(color: theme.colorScheme.onSurface),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ],
                       ),
@@ -150,7 +159,9 @@ class _LogInState extends State<LogIn> {
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(0.6),
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.6,
+                                  ),
                                   blurRadius: 10.0,
                                   spreadRadius: 5.0,
                                 ),
@@ -164,7 +175,9 @@ class _LogInState extends State<LogIn> {
                               backgroundColor: theme.colorScheme.primary,
                               foregroundColor: theme.colorScheme.onPrimary,
                               minimumSize: const Size.fromHeight(50),
-                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16.0,
+                              ),
                             ),
                             child: const Text("Log in"),
                           ),
@@ -185,14 +198,27 @@ class _LogInState extends State<LogIn> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
+                            child: Divider(
+                              thickness: 1,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text('or', style: TextStyle(color: theme.colorScheme.onSurface)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: Text(
+                              'or',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
                           ),
                           Expanded(
-                            child: Divider(thickness: 1, color: theme.colorScheme.onSurface),
+                            child: Divider(
+                              thickness: 1,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ],
                       ),
@@ -214,7 +240,9 @@ class _LogInState extends State<LogIn> {
                         children: [
                           Text(
                             "Don’t have an account? ",
-                            style: TextStyle(color: theme.colorScheme.onSurface),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                           Text(
                             "Sign Up",
@@ -260,17 +288,17 @@ class _LogInState extends State<LogIn> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: theme.colorScheme.surface,
-        border: Border.all(
-          color: theme.colorScheme.onSurface,
-          width: 1.0,
-        ),
+        border: Border.all(color: theme.colorScheme.onSurface, width: 1.0),
       ),
       child: Center(
         child: Image.asset(
           assetPath,
           width: 30,
           height: 30,
-          color: assetPath.contains('apple') ? Colors.white : null, // Apply white color for Apple logo
+          color:
+              assetPath.contains('apple')
+                  ? Colors.white
+                  : null, // Apply white color for Apple logo
         ),
       ),
     );

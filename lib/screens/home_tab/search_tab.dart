@@ -35,10 +35,7 @@ class SearchTab extends StatelessWidget {
                         color: Color.fromRGBO(134, 200, 194, 1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child:Image.asset(
-                        'assets/huoo_logo.png',
-                        
-                      ),
+                      child: Image.asset('assets/huoo_logo.png'),
                     ),
                     SizedBox(width: 12),
                     Text(
@@ -52,7 +49,7 @@ class SearchTab extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -65,16 +62,22 @@ class SearchTab extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: "Songs, Artists, Podcasts & More",
                       hintStyle: TextStyle(color: Colors.grey.shade600),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.grey.shade600,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 15,
+                      ),
                     ),
                   ),
                 ),
               ),
-              
+
               SizedBox(height: 24),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
@@ -92,7 +95,7 @@ class SearchTab extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      
+
                       GridView.count(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
@@ -107,9 +110,9 @@ class SearchTab extends StatelessWidget {
                           _buildGenreItem("Pop", Colors.orange),
                         ],
                       ),
-                      
+
                       SizedBox(height: 32),
-                      
+
                       // Browse All
                       Text(
                         "Browse All",
@@ -120,7 +123,7 @@ class SearchTab extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      
+
                       GridView.count(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
@@ -130,14 +133,21 @@ class SearchTab extends StatelessWidget {
                         mainAxisSpacing: 12,
                         children: [
                           _buildBrowseItem("Made for You", Colors.teal),
-                          _buildBrowseItem("RELEASED", Colors.purple, hasLabel: true),
-                          _buildBrowseItem("Music Charts", Colors.blue.shade800),
+                          _buildBrowseItem(
+                            "RELEASED",
+                            Colors.purple,
+                            hasLabel: true,
+                          ),
+                          _buildBrowseItem(
+                            "Music Charts",
+                            Colors.blue.shade800,
+                          ),
                           _buildBrowseItem("Podcasts", Colors.red.shade800),
                           _buildBrowseItem("Bollywood", Colors.brown.shade700),
                           _buildBrowseItem("Pop Fusion", Colors.teal.shade700),
                         ],
                       ),
-                      
+
                       SizedBox(height: 100), // Bottom padding
                     ],
                   ),

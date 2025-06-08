@@ -70,7 +70,7 @@ class HomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
@@ -79,7 +79,7 @@ class HomeTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: 20),
-                      
+
                       // Continue Listening Section
                       Text(
                         "Continue Listening",
@@ -90,7 +90,7 @@ class HomeTab extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      
+
                       // Continue Listening Grid
                       GridView.count(
                         shrinkWrap: true,
@@ -100,17 +100,36 @@ class HomeTab extends StatelessWidget {
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                         children: [
-                          _buildContinueListeningItem("Coffee & Jazz", Colors.brown),
-                          _buildContinueListeningItem("My Playlist", Colors.green, isReleased: true),
-                          _buildContinueListeningItem("Anything Goes", Colors.orange),
-                          _buildContinueListeningItem("Anime OSTs", Colors.purple),
-                          _buildContinueListeningItem("Harry's House", Colors.pink),
-                          _buildContinueListeningItem("Lo-fi Beats", Colors.blue),
+                          _buildContinueListeningItem(
+                            "Coffee & Jazz",
+                            Colors.brown,
+                          ),
+                          _buildContinueListeningItem(
+                            "My Playlist",
+                            Colors.green,
+                            isReleased: true,
+                          ),
+                          _buildContinueListeningItem(
+                            "Anything Goes",
+                            Colors.orange,
+                          ),
+                          _buildContinueListeningItem(
+                            "Anime OSTs",
+                            Colors.purple,
+                          ),
+                          _buildContinueListeningItem(
+                            "Harry's House",
+                            Colors.pink,
+                          ),
+                          _buildContinueListeningItem(
+                            "Lo-fi Beats",
+                            Colors.blue,
+                          ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 32),
-                      
+
                       // Your Top Mixes Section
                       Text(
                         "Your Top Mixes",
@@ -121,7 +140,7 @@ class HomeTab extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      
+
                       SizedBox(
                         height: 180,
                         child: ListView(
@@ -135,9 +154,9 @@ class HomeTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       SizedBox(height: 32),
-                      
+
                       // Based on recent listening
                       Text(
                         "Based on your recent listening",
@@ -148,7 +167,7 @@ class HomeTab extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
-                      
+
                       SizedBox(
                         height: 160,
                         child: ListView(
@@ -162,7 +181,7 @@ class HomeTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       SizedBox(height: 100), // Bottom padding for navigation
                     ],
                   ),
@@ -172,11 +191,14 @@ class HomeTab extends StatelessWidget {
           ),
         ),
       ),
-
     );
   }
 
-  Widget _buildContinueListeningItem(String title, Color color, {bool isReleased = false}) {
+  Widget _buildContinueListeningItem(
+    String title,
+    Color color, {
+    bool isReleased = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.4),
@@ -271,10 +293,7 @@ class HomeTab extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -289,13 +308,7 @@ class HomeTab extends StatelessWidget {
         color: color.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Center(
-        child: Icon(
-          Icons.album,
-          color: Colors.white54,
-          size: 40,
-        ),
-      ),
+      child: Center(child: Icon(Icons.album, color: Colors.white54, size: 40)),
     );
   }
 }
