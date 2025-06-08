@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:huoo/screens/home_tab/home_tab.dart';
+import 'package:huoo/screens/home_tab/search_tab.dart'; // Import the HomeTab widget
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // List of screens for each tab
   final List<Widget> _screens = [
-    Center(child: Text('Home Screen')),
-    Center(child: Text('Search Screen')),
+    const HomeTab(),
+    const SearchTab(),
     Center(child: Text('Profile Screen')),
   ];
 
