@@ -32,15 +32,37 @@ class SearchTab extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    // Logo placeholder - replace with your app logo
+                    // Logo with proper image loading
                     Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color.fromRGBO(134, 200, 194, 1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Image.asset('assets/huoo_logo.png'),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          'assets/images/huoo_logo.png',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color.fromRGBO(134, 200, 194, 1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.music_note,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Text(
