@@ -6,7 +6,7 @@ import 'package:logger/logger.dart';
 
 import 'package:huoo/screens/main_player.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
-import 'package:huoo/helpers/database_helper.dart';
+import 'package:huoo/helpers/database/helper.dart';
 
 final log = Logger(
   filter: ProductionFilter(),

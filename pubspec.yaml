@@ -46,7 +46,6 @@ dependencies:
   sqflite_common_ffi: ^2.3.5
   http: ^1.4.0
   logger: ^2.5.0
-  on_audio_query: ^2.9.0
   # Audio playback
   just_audio: ^0.10.3
   just_audio_media_kit: ^2.1.0

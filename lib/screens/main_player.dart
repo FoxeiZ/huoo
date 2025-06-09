@@ -306,7 +306,7 @@ class _PlayControlsSection extends StatelessWidget {
                       return;
                     }
                     if (state.playlist.isEmpty) {
-                      log.w("No songs in playlist to play");
+                      _showSnackBar(context, "No songs in playlist to play");
                       return;
                     }
                     if (state.playing) {

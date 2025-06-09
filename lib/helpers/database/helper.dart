@@ -95,21 +95,35 @@ class DatabaseHelper {
       _databaseWrapper = DatabaseWrapper(_database);
 
       // init providers
-      _songProvider = SongProvider(dbWrapper: _databaseWrapper);
-      _albumProvider = AlbumProvider(dbWrapper: _databaseWrapper);
-      _artistProvider = ArtistProvider(dbWrapper: _databaseWrapper);
-      _songArtistProvider = SongArtistProvider(dbWrapper: _databaseWrapper);
-      _albumArtistProvider = AlbumArtistProvider(dbWrapper: _databaseWrapper);
+      _songProvider = SongProvider(_databaseWrapper);
+      _albumProvider = AlbumProvider(_databaseWrapper);
+      _artistProvider = ArtistProvider(_databaseWrapper);
+      _songArtistProvider = SongArtistProvider(_databaseWrapper);
+      _albumArtistProvider = AlbumArtistProvider(_databaseWrapper);
       // _playlistProvider = PlaylistProvider(_database!);
 
       _isInitialized = true;
+      await afterInitialize();
     }
+  }
+
+  Future<void> afterInitialize() async {
+    if (!_isInitialized) {
+      throw StateError('Database not initialized. Call initialize() first.');
+    }
+    await addTestData();
   }
 
   Future<Database> _initDatabase() async {
     final documentsDirectory = await getApplicationSupportDirectory();
     final path = join(documentsDirectory.path, 'huoo_music.db');
     log.i('Database path: $path');
+
+    if ((File(path)).existsSync()) {
+      // delete the existing database file
+      log.w('Database file already exists, deleting it.');
+      await File(path).delete();
+    }
 
     return await openDatabase(
       path,
@@ -130,25 +144,7 @@ class DatabaseHelper {
     await SongArtistProvider.createTable(db);
     await AlbumArtistProvider.createTable(db);
     // await PlaylistProvider.createTable(db);
-
-    // Performance indexes
     await _createIndexes(db);
-
-    // Test data - using improved method
-    // final testAlbum = Album(
-    //   title: 'Test Album',
-    //   coverUri: Uri.http('placehold.co', '/400.png').toString(),
-    //   releaseDate: DateTime.now(),
-    // );
-    // final testArtist = Artist(
-    //   name: 'Test Artist',
-    //   imageUri: Uri.http('placehold.co', '/400.png').toString(),
-    //   bio: 'This is a test artist bio.',
-    // );
-    // final testSong = await Song.fromAsset("assets/audios/sample.m4a");
-
-    // Use the improved transaction-based method
-    // await _insertTestDataSafely(db, testSong, testAlbum, testArtist);
   }
 
   /// Create database indexes for better query performance
@@ -198,25 +194,33 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> _insertTestDataSafely(
-    Database db,
-    Song testSong,
-    Album testAlbum,
-    Artist testArtist,
-  ) async {
-    final dbWrapper = DatabaseWrapper(db);
-    final songProvider = SongProvider(dbWrapper: dbWrapper);
-    final albumProvider = AlbumProvider(dbWrapper: dbWrapper);
-    final artistProvider = ArtistProvider(dbWrapper: dbWrapper);
-    final songArtistProvider = SongArtistProvider(dbWrapper: dbWrapper);
-    final albumArtistProvider = AlbumArtistProvider(dbWrapper: dbWrapper);
+  Future<(Song, Album, Artist)?> addTestData() async {
+    final testAlbum = Album(
+      title: 'Test Album',
+      coverUri: Uri.http('placehold.co', '/400.png').toString(),
+      releaseDate: DateTime.now(),
+    );
+    final testArtist = Artist(
+      name: 'Test Artist',
+      imageUri: Uri.http('placehold.co', '/400.png').toString(),
+      bio: 'This is a test artist bio.',
+    );
+    final testSong = await Song.fromAsset("assets/audios/sample.m4a");
 
-    dbWrapper.beginBatch();
+    if ((await songProvider.getByItem(testSong)) != null) {
+      log.i('Test song already exists, skipping insertion.');
+      return null;
+    }
+
+    // _databaseWrapper.beginBatch();
 
     final insertedArtist = await artistProvider.insertOrUpdate(testArtist);
     final insertedAlbum = await albumProvider.insertOrUpdate(testAlbum);
 
-    final songWithAlbum = testSong.copyWith(albumId: insertedAlbum.id);
+    final songWithAlbum = testSong.copyWith(
+      albumId: insertedAlbum.id,
+      cover: insertedAlbum.coverUri,
+    );
     final insertedSong = await songProvider.insertOrUpdate(songWithAlbum);
 
     if (insertedSong.id == null ||
@@ -234,7 +238,8 @@ class DatabaseHelper {
     await songArtistProvider.insert(songArtist);
     await albumArtistProvider.insert(albumArtist);
 
-    await dbWrapper.commitBatch();
+    // await _databaseWrapper.commitBatch();
+    return (insertedSong, insertedAlbum, insertedArtist);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -263,24 +268,24 @@ class DatabaseHelper {
     );
   }
 
-  Future<Object?> beginTransaction(
-    Future<Object?> Function(Transaction txn, DatabaseHelper helper) builder,
-  ) {
-    return _database.transaction((txn) async {
-      return builder(txn, this);
-    });
-  }
+  // Future<Object?> beginTransaction(
+  //   Future<Object?> Function(Transaction txn, DatabaseHelper helper) builder,
+  // ) {
+  //   return _database.transaction((txn) async {
+  //     return builder(txn, this);
+  //   });
+  // }
 
-  Future<Object?> batchTransaction(
-    Future<Object?> Function(DatabaseHelper helper) builder, {
-    bool noResult = false,
-  }) async {
-    await initialize();
-    return _database.transaction((txn) async {
-      final batch = txn.batch();
-      return executeBatch(builder, noResult: noResult, batch: batch);
-    });
-  }
+  // Future<Object?> batchTransaction(
+  //   Future<Object?> Function(DatabaseHelper helper) builder, {
+  //   bool noResult = false,
+  // }) async {
+  //   await initialize();
+  //   return _database.transaction((txn) async {
+  //     final batch = txn.batch();
+  //     return executeBatch(builder, noResult: noResult, batch: batch);
+  //   });
+  // }
 
   Future<Song> insertSongWithDetails(
     Song song,

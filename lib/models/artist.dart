@@ -70,7 +70,7 @@ class Artist extends Equatable {
 }
 
 class ArtistProvider extends BaseProvider<Artist> {
-  ArtistProvider({super.db, super.dbWrapper});
+  ArtistProvider(super.databaseOperation);
 
   @override
   String get tableName => ArtistColumns.table;

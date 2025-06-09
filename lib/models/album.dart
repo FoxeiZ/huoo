@@ -79,7 +79,7 @@ class Album extends Equatable {
 }
 
 class AlbumProvider extends BaseProvider<Album> {
-  AlbumProvider({super.db, super.dbWrapper});
+  AlbumProvider(super.databaseOperation);
 
   @override
   String get tableName => AlbumColumns.table;

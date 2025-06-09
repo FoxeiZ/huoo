@@ -17,7 +17,7 @@ import 'package:huoo/base/db/provider.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/album.dart';
 
-enum AudioSourceEnum { local, api, asset }
+enum AudioSourceEnum { local, api }
 
 class SongColumns {
   static const String table = 'songs';
@@ -169,12 +169,6 @@ class Song extends Equatable {
       File.fromUri(Uri.file(filePath)),
     );
 
-    final songProvider = DatabaseHelper().songProvider;
-    final existingSong = await songProvider.getByPath(filePath);
-    if (existingSong != null) {
-      return existingSong;
-    }
-
     var song = await Song._fromAudioMetadata(
       path: filePath,
       source: AudioSourceEnum.local,
@@ -182,20 +176,16 @@ class Song extends Equatable {
     );
     String? coverPath = await _getOrSaveCoverPath(metadata);
 
-    final savedSong = song.copyWith(
-      cover: coverPath,
-      dateAdded: DateTime.now(),
-    );
-    await songProvider.insertOrUpdate(savedSong);
-    return savedSong;
+    return song.copyWith(cover: coverPath, dateAdded: DateTime.now());
+    // await songProvider.insertOrUpdate(savedSong);
   }
 
   static Future<Song> fromAsset(String assetPath) async {
     var dir = Directory(
-      p.join((await getTemporaryDirectory()).path, 'just_audio_cache'),
+      p.join((await getApplicationSupportDirectory()).path, 'cache', 'assets'),
     );
     var file = File(
-      p.joinAll([dir.path, 'assets', ...Uri.parse(assetPath).pathSegments]),
+      p.joinAll([dir.path, Uri.parse(assetPath).pathSegments.last]),
     );
     if (!file.existsSync()) {
       file.createSync(recursive: true);
@@ -307,17 +297,15 @@ class Song extends Equatable {
     return Song(
       id: int.tryParse(mediaItem.id),
       title: mediaItem.title,
-      cover: mediaItem.artUri?.toFilePath(),
+      cover: mediaItem.artUri?.toString(),
       duration: mediaItem.duration ?? const Duration(seconds: 0),
       genres: mediaItem.extras?['genres']?.toString().split(', ') ?? [],
       albumId: mediaItem.extras?['albumId'] as int?,
       path: mediaItem.extras?['path'] ?? '',
       source:
-          mediaItem.extras?['source'] == 'AudioSourceEnum.local'
-              ? AudioSourceEnum.local
-              : mediaItem.extras?['source'] == 'AudioSourceEnum.api'
+          mediaItem.extras?['source'] == 'AudioSourceEnum.api'
               ? AudioSourceEnum.api
-              : AudioSourceEnum.asset,
+              : AudioSourceEnum.local,
       year:
           mediaItem.extras?['year'] != null
               ? DateTime.tryParse(mediaItem.extras!['year'])
@@ -347,7 +335,7 @@ class Song extends Equatable {
       id: id?.toString() ?? path,
       title: title,
       artist: await artist,
-      artUri: cover != null ? Uri.file(cover!) : null,
+      artUri: cover != null ? Uri.tryParse(cover!) : null,
       duration: duration,
       genre: genres.isNotEmpty ? genres.join(', ') : null,
       album: await getAlbum().then((album) => album.title),
@@ -376,8 +364,6 @@ class Song extends Equatable {
         return AudioSource.file(path, tag: await toMediaItem());
       case AudioSourceEnum.api:
         return AudioSource.uri(Uri.parse(path), tag: await toMediaItem());
-      case AudioSourceEnum.asset:
-        return AudioSource.asset(path, tag: await toMediaItem());
     }
   }
 
@@ -393,7 +379,6 @@ class Song extends Equatable {
       performers.isNotEmpty ? performers.join(', ') : 'Various Artists';
   bool get isLocal => source == AudioSourceEnum.local;
   bool get isRemote => source == AudioSourceEnum.api;
-  bool get isAsset => source == AudioSourceEnum.asset;
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
@@ -524,7 +509,7 @@ class Song extends Equatable {
 }
 
 class SongProvider extends BaseProvider<Song> {
-  SongProvider({super.db, super.dbWrapper});
+  SongProvider(super.databaseOperation);
 
   static Future<void> createTable(Database db) async {
     await db.execute('''
