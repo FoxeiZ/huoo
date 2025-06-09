@@ -47,7 +47,7 @@ class SongArtist {
 }
 
 class SongArtistProvider extends BaseProvider<SongArtist> {
-  SongArtistProvider({super.db, super.dbWrapper});
+  SongArtistProvider(super.databaseOperation);
 
   static Future<void> createTable(Database db) async {
     await db.execute('''CREATE TABLE ${SongArtistColumns.table} (

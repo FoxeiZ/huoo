@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:huoo/helpers/database/helper.dart';
 import 'package:logger/logger.dart';
 
 import 'package:bloc/bloc.dart';
@@ -32,8 +33,8 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
 
   AudioPlayerBloc() : super(AudioPlayerInitial()) {
     on<AddTestSongEvent>((event, emit) async {
-      var song = await Song.fromAsset("assets/audios/sample.m4a");
-      add(AudioPlayerAddSongEvent(song));
+      var song = await DatabaseHelper().songProvider.getById(1);
+      add(AudioPlayerAddSongEvent(song!));
     });
     on<AudioPlayerInitializeEvent>(_onInitialize);
     // playlist event
@@ -393,7 +394,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   ) async {
     try {
       if (state is AudioPlayerReady) {
-        _player.clearAudioSources();
+        await _player.clearAudioSources();
+        await _player.stop();
+        await _emitStateFromPlayer(emit);
       }
     } catch (e) {
       emit(AudioPlayerError('Failed to clear playlist: ${e.toString()}'));
@@ -601,6 +604,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     final currentState = state;
     if (currentState is AudioPlayerReady) {
       try {
+        if (currentState.source == null) {
+          return;
+        }
         await _player.seek(event.position);
       } catch (e) {
         emit(AudioPlayerError('Failed to seek: ${e.toString()}'));

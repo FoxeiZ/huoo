@@ -3,21 +3,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:huoo/base/db/wrapper.dart';
 
 abstract class BaseProvider<T> {
-  late final DatabaseOperation _dbOperation;
+  final DatabaseOperation _dbOperation;
   DatabaseOperation get db => _dbOperation;
 
-  BaseProvider({Database? db, DatabaseOperation? dbWrapper}) {
-    if (dbWrapper != null) {
-      _dbOperation = dbWrapper;
-    } else if (db == null) {
-      throw ArgumentError('Database or DatabaseOperation must be provided');
-    } else {
-      if (db.isOpen == false) {
-        throw StateError('Database is not open');
-      }
-      _dbOperation = DatabaseWrapper(db);
-    }
-  }
+  const BaseProvider(DatabaseOperation databaseOperation)
+    : _dbOperation = databaseOperation;
 
   static Future<void> createTable(Database db) async {
     throw UnimplementedError('createTable must be implemented in subclasses');
@@ -59,9 +49,8 @@ abstract class BaseProvider<T> {
       final oldItem = getById(id, wrapper);
       if (oldItem != item) return update(item, wrapper).then((_) => item);
       return Future.value(item);
-    } else {
-      return insert(item, wrapper);
-    }
+    } else {}
+    return insert(item, wrapper);
   }
 
   Future<void> insertAll(List<T> items, [DatabaseOperation? dbWrapper]) {
@@ -83,7 +72,7 @@ abstract class BaseProvider<T> {
   Future<T> itemFromMap(Map<String, dynamic> map);
   T copyWithId(T item, int? id);
   int? getItemId(T item);
-  Future<T?> queryFromItem(T item, [DatabaseOperation? dbWrapper]) async {
+  Future<T?> getByItem(T item, [DatabaseOperation? dbWrapper]) async {
     final wrapper = dbWrapper ?? _dbOperation;
     final itemMap = itemToMap(item);
     final nonNullColumns =

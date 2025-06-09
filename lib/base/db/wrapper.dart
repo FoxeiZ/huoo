@@ -1,6 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 
 abstract class DatabaseOperation {
+  bool get isOpen;
+  Database get database;
+
   Future<int> insert(String table, Map<String, Object?> values);
   Future<int> update(
     String table,
@@ -30,6 +33,11 @@ class DatabaseWrapper implements DatabaseOperation {
   Batch? _batch;
 
   DatabaseWrapper(this._db, [this._batch]);
+
+  @override
+  Database get database => _db;
+  @override
+  bool get isOpen => _db.isOpen;
 
   @override
   Future<int> insert(String table, Map<String, Object?> values) {
