@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/song.dart';
 
 /// Service responsible for persisting playlist state and restoring it
-class PlaylistPersistenceService {
+class PlayerPersistenceService {
   static const String _playlistKey = 'saved_playlist';
   static const String _currentIndexKey = 'current_index';
   static const String _currentPositionKey = 'current_position';
@@ -14,7 +14,7 @@ class PlaylistPersistenceService {
   static const String _lastPlayedKey = 'last_played';
 
   /// Save the current playlist state
-  static Future<void> savePlaylistState({
+  static Future<void> savePlayerState({
     required List<Song> songs,
     int? currentIndex,
     Duration? currentPosition,
@@ -50,7 +50,7 @@ class PlaylistPersistenceService {
     }
   }
 
-  static Future<PlaylistState?> loadPlaylistState() async {
+  static Future<PlayerSavedState?> loadPlayerState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -83,9 +83,9 @@ class PlaylistPersistenceService {
       final lastPlayedMs = prefs.getInt(_lastPlayedKey) ?? 0;
       final lastPlayed = DateTime.fromMillisecondsSinceEpoch(lastPlayedMs);
 
-      log('Playlist state loaded successfully: ${songs.length} songs');
+      log('Player state loaded successfully: ${songs.length} songs');
 
-      return PlaylistState(
+      return PlayerSavedState(
         songs: songs,
         currentIndex: currentIndex.clamp(0, songs.length - 1),
         currentPosition: currentPosition,
@@ -95,7 +95,7 @@ class PlaylistPersistenceService {
         lastPlayed: lastPlayed,
       );
     } catch (e) {
-      log('Error loading playlist state: $e');
+      log('Error loading player state: $e');
       return null;
     }
   }
@@ -114,9 +114,9 @@ class PlaylistPersistenceService {
         prefs.remove(_lastPlayedKey),
       ]);
 
-      log('Playlist state cleared');
+      log('Player state cleared');
     } catch (e) {
-      log('Error clearing playlist state: $e');
+      log('Error clearing player state: $e');
     }
   }
 
@@ -167,7 +167,7 @@ class PlaylistPersistenceService {
   }
 }
 
-class PlaylistState {
+class PlayerSavedState {
   final List<Song> songs;
   final int currentIndex;
   final Duration currentPosition;
@@ -176,7 +176,7 @@ class PlaylistState {
   final double volume;
   final DateTime lastPlayed;
 
-  const PlaylistState({
+  const PlayerSavedState({
     required this.songs,
     required this.currentIndex,
     required this.currentPosition,
@@ -188,7 +188,7 @@ class PlaylistState {
 
   @override
   String toString() {
-    return 'PlaylistState(songs: ${songs.length}, currentIndex: $currentIndex, '
+    return 'PlayerState(songs: ${songs.length}, currentIndex: $currentIndex, '
         'position: ${currentPosition.inSeconds}s, loopMode: $loopMode, '
         'shuffleMode: $shuffleMode, volume: $volume, lastPlayed: $lastPlayed)';
   }
