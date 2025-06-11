@@ -4,7 +4,7 @@ sealed class AudioPlayerEvent extends Equatable {
   const AudioPlayerEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class AudioPlayerSequenceUpdateEvent extends AudioPlayerEvent {
@@ -66,7 +66,7 @@ class AudioPlayerBufferedPositionEvent extends AudioPlayerEvent {
   List<Object> get props => [bufferedPosition];
 }
 
-// ---------- Playlist Events ---------- //
+// ---------- Player Events ---------- //
 class AudioPlayerPlaylistStateEvent extends AudioPlayerEvent {
   final DateTime? lastPlayed;
 
@@ -151,7 +151,7 @@ class AudioPlayerMovePlaylistItemEvent extends AudioPlayerEvent {
   List<Object> get props => [oldIndex, newIndex];
 }
 
-// ---------- Initialization and Playlist Loading Events ---------- //
+// ---------- Initialization and PlayerSaved Loading Events ---------- //
 class AudioPlayerInitializeEvent extends AudioPlayerEvent {
   const AudioPlayerInitializeEvent();
 
@@ -191,3 +191,19 @@ class AudioPlayerSeekEvent extends AudioPlayerEvent {
 
 // ---------- testing events ---------- //
 class AddTestSongEvent extends AudioPlayerEvent {}
+
+// ----------- sleep timer ---------- //
+class AudioPlayerSleepTimerEvent extends AudioPlayerEvent {
+  final bool isActive;
+  final Duration? duration;
+  final void Function()? onTimerEnd;
+
+  const AudioPlayerSleepTimerEvent({
+    this.isActive = false,
+    this.duration,
+    this.onTimerEnd,
+  });
+
+  @override
+  List<Object?> get props => [isActive, duration, onTimerEnd];
+}
