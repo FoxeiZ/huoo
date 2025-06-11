@@ -4,7 +4,7 @@ sealed class AudioPlayerEvent extends Equatable {
   const AudioPlayerEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class AudioPlayerSequenceUpdateEvent extends AudioPlayerEvent {
@@ -191,3 +191,19 @@ class AudioPlayerSeekEvent extends AudioPlayerEvent {
 
 // ---------- testing events ---------- //
 class AddTestSongEvent extends AudioPlayerEvent {}
+
+// ----------- sleep timer ---------- //
+class AudioPlayerSleepTimerEvent extends AudioPlayerEvent {
+  final bool isActive;
+  final Duration? duration;
+  final void Function()? onTimerEnd;
+
+  const AudioPlayerSleepTimerEvent({
+    this.isActive = false,
+    this.duration,
+    this.onTimerEnd,
+  });
+
+  @override
+  List<Object?> get props => [isActive, duration, onTimerEnd];
+}

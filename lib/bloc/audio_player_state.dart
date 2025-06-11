@@ -4,7 +4,7 @@ sealed class AudioPlayerState extends Equatable {
   const AudioPlayerState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 final class AudioPlayerInitial extends AudioPlayerState {
@@ -42,6 +42,8 @@ class AudioPlayerReady extends AudioPlayerState {
   // queue state
   final bool hasNext;
   final bool hasPrevious;
+  // sleep timer
+  final Duration? sleepTimer;
 
   const AudioPlayerReady({
     this.source,
@@ -62,6 +64,7 @@ class AudioPlayerReady extends AudioPlayerState {
     this.androidAudioSessionId,
     this.hasNext = false,
     this.hasPrevious = false,
+    this.sleepTimer,
   });
 
   AudioPlayerReady copyWith({
@@ -83,6 +86,7 @@ class AudioPlayerReady extends AudioPlayerState {
     int? androidAudioSessionId,
     bool? hasNext,
     bool? hasPrevious,
+    Duration? sleepTimer,
   }) {
     return AudioPlayerReady(
       source: source ?? this.source,
@@ -104,15 +108,16 @@ class AudioPlayerReady extends AudioPlayerState {
           androidAudioSessionId ?? this.androidAudioSessionId,
       hasNext: hasNext ?? this.hasNext,
       hasPrevious: hasPrevious ?? this.hasPrevious,
+      sleepTimer: sleepTimer ?? this.sleepTimer,
     );
   }
 
   @override
-  List<Object> get props => [
-    if (source != null) source!,
+  List<Object?> get props => [
+    source,
     playlist,
-    if (currentIndex != null) currentIndex!,
-    if (songMetadata != null) songMetadata!,
+    currentIndex,
+    songMetadata,
     loading,
     playing,
     processingState,
@@ -124,9 +129,10 @@ class AudioPlayerReady extends AudioPlayerState {
     volume,
     speed,
     pitch,
-    if (androidAudioSessionId != null) androidAudioSessionId!,
+    androidAudioSessionId,
     hasNext,
     hasPrevious,
+    sleepTimer,
   ];
 }
 

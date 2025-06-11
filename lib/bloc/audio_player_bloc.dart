@@ -31,6 +31,8 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   StreamSubscription<int?>? _currentIndexSubscription;
   StreamSubscription<SequenceState?>? _sequenceStateSubscription;
 
+  Timer? _sleepTimerInstance;
+
   AudioPlayerBloc() : super(AudioPlayerInitial()) {
     on<AddTestSongEvent>((event, emit) async {
       var song = await DatabaseHelper().songProvider.getById(1);
@@ -60,6 +62,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     on<AudioPlayerNextTrackEvent>(_onNextTrack);
     on<AudioPlayerPreviousTrackEvent>(_onPreviousTrack);
     on<AudioPlayerSeekEvent>(_onSeek);
+    // Timer events
+    on<AudioPlayerSleepTimerEvent>(_onSleepTimerEvent);
+
     // Initial state
     _initSubscriptions();
     add(const AudioPlayerInitializeEvent());
@@ -634,6 +639,22 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           hasPrevious: event.hasPrevious,
         ),
       );
+    }
+  }
+
+  Future<void> _onSleepTimerEvent(
+    AudioPlayerSleepTimerEvent event,
+    Emitter<AudioPlayerState> emit,
+  ) async {
+    if (event.isActive) {
+      _sleepTimerInstance?.cancel();
+      _sleepTimerInstance = Timer(event.duration!, () {
+        add(AudioPlayerStopEvent());
+        event.onTimerEnd?.call();
+      });
+    } else {
+      _sleepTimerInstance?.cancel();
+      _sleepTimerInstance = null;
     }
   }
 
