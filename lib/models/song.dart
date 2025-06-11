@@ -5,6 +5,7 @@ import 'package:audio_metadata_reader/audio_metadata_reader.dart'
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
+import 'package:huoo/base/db/wrapper.dart';
 import 'package:huoo/models/artist.dart';
 import 'package:huoo/models/many/song_artist.dart';
 import 'package:just_audio/just_audio.dart';
@@ -70,7 +71,7 @@ class Song extends Equatable {
   final AudioSourceEnum source;
   final String? cover;
   final int? albumId;
-  final DateTime? year;
+  final int? year;
   final String? language;
   final List<String> performers;
   final String title;
@@ -123,7 +124,7 @@ class Song extends Equatable {
     return Song(
       path: path,
       source: source,
-      year: metadata.year ?? DateTime.now(),
+      year: metadata.year?.year,
       language: metadata.language,
       performers: metadata.performers,
       title: metadata.title ?? 'Unknown Title',
@@ -136,7 +137,6 @@ class Song extends Equatable {
       lyrics: metadata.lyrics,
       rating: 0.0,
       playCount: 0,
-      dateAdded: DateTime.now(),
       lastPlayed: null,
     );
   }
@@ -176,7 +176,7 @@ class Song extends Equatable {
     );
     String? coverPath = await _getOrSaveCoverPath(metadata);
 
-    return song.copyWith(cover: coverPath, dateAdded: DateTime.now());
+    return song.copyWith(cover: coverPath);
     // await songProvider.insertOrUpdate(savedSong);
   }
 
@@ -200,10 +200,7 @@ class Song extends Equatable {
     return Song(
       id: map[SongColumns.id] as int?,
       path: map[SongColumns.path] as String,
-      year:
-          map[SongColumns.year] != null
-              ? DateTime.parse(map[SongColumns.year] as String)
-              : null,
+      year: map[SongColumns.year] as int?,
       language: map[SongColumns.language] as String?,
       albumId: map[SongColumns.albumId] as int?,
       performers:
@@ -270,7 +267,7 @@ class Song extends Equatable {
     return {
       SongColumns.id: id,
       SongColumns.path: path,
-      SongColumns.year: year?.toIso8601String(),
+      SongColumns.year: year,
       SongColumns.albumId: albumId,
       SongColumns.language: language,
       SongColumns.performers: performers.join(', '),
@@ -306,10 +303,7 @@ class Song extends Equatable {
           mediaItem.extras?['source'] == 'AudioSourceEnum.api'
               ? AudioSourceEnum.api
               : AudioSourceEnum.local,
-      year:
-          mediaItem.extras?['year'] != null
-              ? DateTime.tryParse(mediaItem.extras!['year'])
-              : null,
+      year: mediaItem.extras?['year'],
       language: mediaItem.extras?['language'],
       performers: mediaItem.extras?['performers']?.toString().split(', ') ?? [],
       trackNumber: mediaItem.extras?['trackNumber'] ?? 0,
@@ -342,7 +336,7 @@ class Song extends Equatable {
       extras: {
         'path': path,
         'source': source.toString(),
-        'year': year?.year.toString(),
+        'year': year,
         'language': language,
         'performers': performers,
         'trackNumber': trackNumber,
@@ -374,7 +368,7 @@ class Song extends Equatable {
   String get coverOrDefault => cover ?? 'assets/images/default_cover.png';
   String get displayDuration => _formatDuration(duration);
   String get genre => genres.isNotEmpty ? genres.join(', ') : 'Unknown Genre';
-  String get formattedYear => year?.year.toString() ?? 'Unknown Year';
+  String get formattedYear => year?.toString() ?? 'Unknown Year';
   String get performer =>
       performers.isNotEmpty ? performers.join(', ') : 'Various Artists';
   bool get isLocal => source == AudioSourceEnum.local;
@@ -397,7 +391,7 @@ class Song extends Equatable {
     AudioSourceEnum? source,
     String? cover,
     int? albumId,
-    DateTime? year,
+    int? year,
     String? language,
     List<String>? performers,
     String? title,
@@ -577,6 +571,17 @@ class SongProvider extends BaseProvider<Song> {
   @override
   Future<Song> itemFromMap(Map<String, dynamic> map) async {
     return Song.fromMap(map);
+  }
+
+  @override
+  Future<Song> insert(Song item, [DatabaseOperation? dbWrapper]) async {
+    return super.insert(
+      item.copyWith(
+        dateAdded: item.dateAdded ?? DateTime.now(),
+        lastPlayed: item.lastPlayed ?? DateTime.now(),
+      ),
+      dbWrapper,
+    );
   }
 
   Future<Song?> getSongWithDetails(int songId) async {

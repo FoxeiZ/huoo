@@ -74,7 +74,8 @@ abstract class BaseProvider<T> {
   int? getItemId(T item);
   Future<T?> getByItem(T item, [DatabaseOperation? dbWrapper]) async {
     final wrapper = dbWrapper ?? _dbOperation;
-    final itemMap = itemToMap(item);
+    final cpItem = copyWithId(item, null);
+    final itemMap = itemToMap(cpItem);
     final nonNullColumns =
         columns.where((col) => itemMap[col] != null).toList();
     if (nonNullColumns.isEmpty) return null;
