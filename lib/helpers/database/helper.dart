@@ -119,12 +119,6 @@ class DatabaseHelper {
     final path = join(documentsDirectory.path, 'huoo_music.db');
     log.i('Database path: $path');
 
-    if ((File(path)).existsSync()) {
-      // delete the existing database file
-      log.w('Database file already exists, deleting it.');
-      await File(path).delete();
-    }
-
     return await openDatabase(
       path,
       version: 1,
@@ -194,7 +188,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<(Song, Album, Artist)?> addTestData() async {
+  Future<void> addTestData() async {
     final testAlbum = Album(
       title: 'Test Album',
       coverUri: Uri.http('placehold.co', '/400.png').toString(),
@@ -209,7 +203,7 @@ class DatabaseHelper {
 
     if ((await songProvider.getByItem(testSong)) != null) {
       log.i('Test song already exists, skipping insertion.');
-      return null;
+      return;
     }
 
     // _databaseWrapper.beginBatch();
@@ -239,7 +233,6 @@ class DatabaseHelper {
     await albumArtistProvider.insert(albumArtist);
 
     // await _databaseWrapper.commitBatch();
-    return (insertedSong, insertedAlbum, insertedArtist);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {

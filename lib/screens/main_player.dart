@@ -122,99 +122,106 @@ class _SleepTimerDialogState extends State<_SleepTimerDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Sleep Timer'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // tap-able text field
-          GestureDetector(
-            onTap: _showTimeInputDialog,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).dividerColor),
-                borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext _) {
+    return BlocBuilder<AudioPlayerBloc, AudioPlayerState>(
+      builder: (context, state) {
+        return AlertDialog(
+          title: const Text('Sleep Timer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // tap-able text field
+              GestureDetector(
+                onTap: _showTimeInputDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _textController.text,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.edit, size: 16),
+                    ],
+                  ),
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+
+              const SizedBox(height: 24),
+
+              // slider
+              Column(
                 children: [
                   Text(
-                    _textController.text,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Adjust Duration',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.edit, size: 16),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // slider
-          Column(
-            children: [
-              Text(
-                'Adjust Duration',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              Slider(
-                value: _timerMinutes,
-                min: _minMinutes,
-                max: _maxMinutes,
-                divisions: 58, // 10min steps approximately
-                onChanged: (value) {
-                  setState(() {
-                    _timerMinutes = value;
-                    _updateTextController();
-                  });
-                },
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('${_minMinutes.round()}m'),
-                  Text('${(_maxMinutes / 60).round()}h'),
+                  const SizedBox(height: 8),
+                  Slider(
+                    value: _timerMinutes,
+                    min: _minMinutes,
+                    max: _maxMinutes,
+                    divisions: 58, // 10min steps approximately
+                    onChanged: (value) {
+                      setState(() {
+                        _timerMinutes = value;
+                        _updateTextController();
+                      });
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${_minMinutes.round()}m'),
+                      Text('${(_maxMinutes / 60).round()}h'),
+                    ],
+                  ),
                 ],
               ),
             ],
           ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            context.read<AudioPlayerBloc>().add(
-              AudioPlayerSleepTimerEvent(
-                isActive: true,
-                duration: Duration(minutes: _timerMinutes.round()),
-                onTimerEnd: () {
-                  log.i(
-                    'Sleep timer ended after ${_timerMinutes.round()} minutes',
-                  );
-                  _showSnackBar(context, 'Sleep timer ended');
-                },
-              ),
-            );
-            log.i('Sleep timer set for ${_timerMinutes.round()} minutes');
-            _showSnackBar(
-              context,
-              'Sleep timer set for ${_textController.text}',
-            );
-            Navigator.pop(context);
-          },
-          child: const Text('Start Timer'),
-        ),
-      ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.read<AudioPlayerBloc>().add(
+                  AudioPlayerSleepTimerEvent(
+                    isActive: true,
+                    duration: Duration(minutes: _timerMinutes.round()),
+                    onTimerEnd: () {
+                      log.i('Sleep timer ended');
+                      _showSnackBar(context, 'Sleep timer ended');
+                      context.read<AudioPlayerBloc>().add(
+                        AudioPlayerPauseEvent(),
+                      );
+                    },
+                  ),
+                );
+                log.i('Sleep timer set for ${_timerMinutes.round()} minutes');
+                _showSnackBar(
+                  context,
+                  'Sleep timer set for ${_textController.text}',
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Start Timer'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
