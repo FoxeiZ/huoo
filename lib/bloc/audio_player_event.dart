@@ -66,7 +66,7 @@ class AudioPlayerBufferedPositionEvent extends AudioPlayerEvent {
   List<Object> get props => [bufferedPosition];
 }
 
-// ---------- Playlist Events ---------- //
+// ---------- Player Events ---------- //
 class AudioPlayerPlaylistStateEvent extends AudioPlayerEvent {
   final DateTime? lastPlayed;
 
@@ -151,7 +151,7 @@ class AudioPlayerMovePlaylistItemEvent extends AudioPlayerEvent {
   List<Object> get props => [oldIndex, newIndex];
 }
 
-// ---------- Initialization and Playlist Loading Events ---------- //
+// ---------- Initialization and PlayerSaved Loading Events ---------- //
 class AudioPlayerInitializeEvent extends AudioPlayerEvent {
   const AudioPlayerInitializeEvent();
 

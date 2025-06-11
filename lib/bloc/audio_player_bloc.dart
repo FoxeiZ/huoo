@@ -87,7 +87,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       if (state is AudioPlayerReady) {
         final currentReadyState = state as AudioPlayerReady;
         if (currentReadyState.playlist.isNotEmpty) {
-          PlaylistPersistenceService.savePlaylistState(
+          PlayerPersistenceService.savePlayerState(
             songs: await Future.wait(
               currentReadyState.playlist
                   .map((source) => Song.fromMediaItem(source.tag))
@@ -111,7 +111,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         ),
       );
       if (state is AudioPlayerReady) {
-        PlaylistPersistenceService.saveCurrentPosition(position);
+        PlayerPersistenceService.saveCurrentPosition(position);
       }
     });
 
@@ -218,7 +218,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   ) async {
     emit(AudioPlayerLoading());
     try {
-      final savedState = await PlaylistPersistenceService.loadPlaylistState();
+      final savedState = await PlayerPersistenceService.loadPlayerState();
       if (savedState != null && savedState.songs.isNotEmpty) {
         final audioSources = await Future.wait(
           savedState.songs.map((song) => song.toAudioSource()).toList(),
@@ -331,7 +331,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       log.d(
         'New playlist loaded. Index: ${_player.currentIndex}, Song: ${currentSong?.title}',
       );
-      PlaylistPersistenceService.savePlaylistState(
+      PlayerPersistenceService.savePlayerState(
         songs: event.songs,
         currentIndex: _player.currentIndex,
         currentPosition: _player.position,
@@ -613,6 +613,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           return;
         }
         await _player.seek(event.position);
+        await PlayerPersistenceService.saveCurrentPosition(event.position);
       } catch (e) {
         emit(AudioPlayerError('Failed to seek: ${e.toString()}'));
       }
