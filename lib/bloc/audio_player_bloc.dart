@@ -613,7 +613,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
           return;
         }
         await _player.seek(event.position);
-        await PlayerPersistenceService.saveCurrentPosition(event.position);
       } catch (e) {
         emit(AudioPlayerError('Failed to seek: ${e.toString()}'));
       }
