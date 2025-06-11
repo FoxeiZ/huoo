@@ -193,7 +193,18 @@ class _SleepTimerDialogState extends State<_SleepTimerDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            // TODO: Implement actual timer functionality
+            context.read<AudioPlayerBloc>().add(
+              AudioPlayerSleepTimerEvent(
+                isActive: true,
+                duration: Duration(minutes: _timerMinutes.round()),
+                onTimerEnd: () {
+                  log.i(
+                    'Sleep timer ended after ${_timerMinutes.round()} minutes',
+                  );
+                  _showSnackBar(context, 'Sleep timer ended');
+                },
+              ),
+            );
             log.i('Sleep timer set for ${_timerMinutes.round()} minutes');
             _showSnackBar(
               context,
