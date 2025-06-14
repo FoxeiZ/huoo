@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/screens/home_tab/home_tab.dart';
+import 'package:huoo/screens/home_tab/library_tab.dart';
 import 'package:huoo/screens/home_tab/search_tab.dart'; // Import the HomeTab widget
 
 class HomeScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const HomeTab(),
     const SearchTab(),
-    Center(child: Text('Profile Screen')),
+    LibraryTab(),
   ];
 
   void _onItemTapped(int index) {

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
 
@@ -55,7 +53,11 @@ class LibraryTabState extends State<LibraryTab>
                       color: const Color(0xFF1DB954),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -100,7 +102,10 @@ class LibraryTabState extends State<LibraryTab>
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF1DB954) : const Color(0xFF2A2A2A),
+                                  color:
+                                      isSelected
+                                          ? const Color(0xFF1DB954)
+                                          : const Color(0xFF2A2A2A),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -108,7 +113,10 @@ class LibraryTabState extends State<LibraryTab>
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
                                   ),
                                 ),
                               );
@@ -130,11 +138,36 @@ class LibraryTabState extends State<LibraryTab>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  const Center(child: Text('Folders', style: TextStyle(color: Colors.white))),
-                  const Center(child: Text('Playlists', style: TextStyle(color: Colors.white))),
-                  const Center(child: Text('Artists', style: TextStyle(color: Colors.white))),
-                  const Center(child: Text('Albums', style: TextStyle(color: Colors.white))),
-                  const Center(child: Text('Podcasts', style: TextStyle(color: Colors.white))),
+                  const Center(
+                    child: Text(
+                      'Folders',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Center(
+                    child: Text(
+                      'Playlists',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Center(
+                    child: Text(
+                      'Artists',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Center(
+                    child: Text(
+                      'Albums',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Center(
+                    child: Text(
+                      'Podcasts',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ],
               ),
             ),
