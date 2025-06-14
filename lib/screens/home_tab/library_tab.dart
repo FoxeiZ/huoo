@@ -10,21 +10,23 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Music Library',
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Color(0xFF121212),
-        primaryColor: Color(0xFF1DB954),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        primaryColor: const Color(0xFF1DB954),
       ),
-      home: LibraryTab(),
+      home: const LibraryTab(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class LibraryTab extends StatefulWidget {
+  const LibraryTab({super.key});
+
   @override
-  _LibraryTabState createState() => _LibraryTabState();
+  LibraryTabState createState() => LibraryTabState();
 }
 
-class _LibraryTabState extends State<LibraryTab>
+class LibraryTabState extends State<LibraryTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final List<String> categories = [
@@ -61,7 +63,7 @@ class _LibraryTabState extends State<LibraryTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF121212),
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         child: Column(
           children: [
@@ -74,13 +76,17 @@ class _LibraryTabState extends State<LibraryTab>
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Color(0xFF1DB954),
+                      color: const Color(0xFF1DB954),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(Icons.person, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  SizedBox(width: 12),
-                  Text(
+                  const SizedBox(width: 12),
+                  const Text(
                     'Your Library',
                     style: TextStyle(
                       fontSize: 24,
@@ -88,8 +94,8 @@ class _LibraryTabState extends State<LibraryTab>
                       color: Colors.white,
                     ),
                   ),
-                  Spacer(),
-                  Icon(Icons.search, color: Colors.white, size: 24),
+                  const Spacer(),
+                  const Icon(Icons.search, color: Colors.white, size: 24),
                 ],
               ),
             ),
@@ -99,15 +105,15 @@ class _LibraryTabState extends State<LibraryTab>
               height: 50,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                physics: ClampingScrollPhysics(), // Prevents over-scroll
+                physics: const ClampingScrollPhysics(),
                 child: Row(
                   children: [
-                    SizedBox(width: 16), // Left padding
+                    const SizedBox(width: 16),
                     ...categories.asMap().entries.map((entry) {
                       int index = entry.key;
                       String category = entry.value;
                       return Padding(
-                        padding: EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
                           onTap: () {
                             _tabController.animateTo(index);
@@ -117,15 +123,15 @@ class _LibraryTabState extends State<LibraryTab>
                             builder: (context, child) {
                               bool isSelected = _tabController.index == index;
                               return Container(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
                                   color:
                                       isSelected
-                                          ? Color(0xFF1DB954)
-                                          : Color(0xFF2A2A2A),
+                                          ? const Color(0xFF1DB954)
+                                          : const Color(0xFF2A2A2A),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -145,13 +151,13 @@ class _LibraryTabState extends State<LibraryTab>
                         ),
                       );
                     }).toList(),
-                    SizedBox(width: 8), // Right padding
+                    const SizedBox(width: 8),
                   ],
                 ),
               ),
             ),
 
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Content based on selected tab
             Expanded(
@@ -163,21 +169,21 @@ class _LibraryTabState extends State<LibraryTab>
                   // Playlists tab (default content)
                   _buildPlaylistContent(),
                   // Artists tab
-                  Center(
+                  const Center(
                     child: Text(
                       'Artists',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
                   // Albums tab
-                  Center(
+                  const Center(
                     child: Text(
                       'Albums',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
                   // Podcasts tab
-                  Center(
+                  const Center(
                     child: Text(
                       'Podcasts',
                       style: TextStyle(color: Colors.white),
@@ -204,13 +210,13 @@ class _LibraryTabState extends State<LibraryTab>
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Color(0xFF1DB954),
+                  color: const Color(0xFF1DB954),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: Icon(Icons.add, color: Colors.white, size: 24),
+                child: const Icon(Icons.add, color: Colors.white, size: 24),
               ),
-              SizedBox(width: 16),
-              Text(
+              const SizedBox(width: 16),
+              const Text(
                 'Add New Playlist',
                 style: TextStyle(
                   color: Colors.white,
@@ -222,7 +228,7 @@ class _LibraryTabState extends State<LibraryTab>
           ),
         ),
 
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
 
         // Your Liked Songs
         Padding(
@@ -233,17 +239,21 @@ class _LibraryTabState extends State<LibraryTab>
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [Color(0xFF4C1A57), Color(0xFF9C4CB4)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.favorite, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.favorite,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
-              SizedBox(width: 16),
-              Text(
+              const SizedBox(width: 16),
+              const Text(
                 'Your Liked Songs',
                 style: TextStyle(
                   color: Colors.white,
@@ -255,16 +265,16 @@ class _LibraryTabState extends State<LibraryTab>
           ),
         ),
 
-        SizedBox(height: 24),
+        const SizedBox(height: 24),
 
         // Recently played header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             children: [
-              Icon(Icons.access_time, color: Colors.white70, size: 16),
-              SizedBox(width: 8),
-              Text(
+              const Icon(Icons.access_time, color: Colors.white70, size: 16),
+              const SizedBox(width: 8),
+              const Text(
                 'Recently played',
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
@@ -272,12 +282,12 @@ class _LibraryTabState extends State<LibraryTab>
           ),
         ),
 
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
 
         // Playlist items
         Expanded(
           child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: playlists.length,
             itemBuilder: (context, index) {
               final playlist = playlists[index];
@@ -289,32 +299,32 @@ class _LibraryTabState extends State<LibraryTab>
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Color(0xFF2A2A2A),
+                        color: const Color(0xFF2A2A2A),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.folder,
                         color: Colors.white70,
                         size: 24,
                       ),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             playlist.name,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             '${playlist.playlistCount} playlists',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
                             ),
