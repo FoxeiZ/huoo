@@ -5,6 +5,7 @@ import 'package:huoo/models/song.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/screens/main_player.dart';
+import 'package:huoo/widgets/common/song_tile.dart';
 
 class AlbumsListWidget extends StatefulWidget {
   const AlbumsListWidget({super.key});
@@ -405,41 +406,14 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
                           itemCount: songs.length,
                           itemBuilder: (context, index) {
                             final song = songs[index];
-                            return ListTile(
-                              leading: Text(
-                                '${index + 1}',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              title: Text(
-                                song.title,
-                                style: const TextStyle(color: Colors.white),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                song.artist.isNotEmpty
-                                    ? song.artist
-                                    : 'Unknown Artist',
-                                style: const TextStyle(color: Colors.white70),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(
-                                  Icons.more_vert,
-                                  color: Colors.white54,
-                                ),
-                                onPressed: () {
-                                  // TODO: Show song options
-                                },
-                              ),
+                            return SongTile(
+                              song: song,
                               onTap: () {
                                 Navigator.pop(context);
-                                _playSong(song);
+                                _playAlbum(songs, index);
                               },
+                              onMorePressed: () => _showSongOptions(song),
+                              formatDuration: _formatDuration,
                             );
                           },
                         ),
@@ -465,27 +439,159 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
   }
 
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showSongOptions(Song song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2A2A2A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.play_arrow, color: Colors.white),
+                  title: const Text(
+                    'Play',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _playSong(song);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.queue_music, color: Colors.white),
+                  title: const Text(
+                    'Add to Queue',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addToQueue(song);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.playlist_add, color: Colors.white),
+                  title: const Text(
+                    'Add to Playlist',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Add to playlist
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info, color: Colors.white),
+                  title: const Text(
+                    'Song Info',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSongInfo(song);
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _addToQueue(Song song) {
+    final bloc = context.read<AudioPlayerBloc>();
+    bloc.add(AudioPlayerAddSongEvent(song));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added "${song.title}" to queue'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF1DB954),
+      ),
+    );
+  }
+
+  void _showSongInfo(Song song) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF2A2A2A),
+            title: const Text(
+              'Song Information',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow('Title', song.title),
+                _buildInfoRow(
+                  'Artist',
+                  song.artist.isNotEmpty ? song.artist : 'Unknown',
+                ),
+                _buildInfoRow('Duration', _formatDuration(song.duration)),
+                _buildInfoRow('Track', '${song.trackNumber}'),
+                if (song.album != null)
+                  _buildInfoRow('Album', song.album!.title),
+                if (song.year != null)
+                  _buildInfoRow('Year', song.year.toString()),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Color(0xFF1DB954)),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _playAlbum(List<Song> songs, [int startIndex = 0]) {
     if (songs.isEmpty) return;
 
-    final bloc = context.read<AudioPlayerBloc>();
+    context.read<AudioPlayerBloc>().add(
+      AudioPlayerLoadPlaylistEvent(songs, initialIndex: startIndex),
+    );
 
-    // Clear playlist and add all album songs
-    bloc.add(AudioPlayerClearPlaylistEvent());
-
-    // Add songs to playlist starting from startIndex
-    for (int i = startIndex; i < songs.length; i++) {
-      bloc.add(AudioPlayerAddSongEvent(songs[i]));
-    }
-
-    // Add remaining songs from beginning if startIndex > 0
-    for (int i = 0; i < startIndex; i++) {
-      bloc.add(AudioPlayerAddSongEvent(songs[i]));
-    }
-
-    bloc.add(AudioPlayerPlayEvent());
-
-    // Navigate to main player
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));

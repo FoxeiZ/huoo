@@ -437,21 +437,15 @@ class MediaScannerService {
     return audioFiles;
   }
 
-  /// Convert audio file to song data format for bulk import
   Future<Map<String, dynamic>?> _convertAudioFileToSongData(
     File audioFile,
   ) async {
     try {
-      // Use Song.fromLocalFile which already reads metadata properly
       final song = await Song.fromLocalFile(audioFile.path);
-
-      // Get album info from the song (fromLocalFile already extracts this)
       final album = await song.getAlbum();
 
-      // Extract artists from metadata or use fallback
       final artists = <Artist>[];
       if (song.artists.isNotEmpty) {
-        // Use artists from metadata
         for (final artist in song.artists) {
           if (artist != null && artist.name.isNotEmpty) {
             artists.add(artist);
@@ -461,21 +455,10 @@ class MediaScannerService {
 
       // If no artists found, create a default one from the directory or filename
       if (artists.isEmpty) {
-        final directoryPath = p.dirname(audioFile.path);
-        final parentDirName = p.basename(directoryPath);
-
-        // Try to extract artist from directory structure or use fallback
-        final artistName =
-            parentDirName.isNotEmpty && parentDirName != '.'
-                ? parentDirName
-                : 'Unknown Artist';
-
-        artists.add(Artist(name: artistName));
+        artists.add(Artist(name: "Unknown Artist"));
       }
 
-      // Process cover image if available (look for common cover art files)
-      String? coverPath = song.cover; // Use cover from metadata first
-
+      String? coverPath = song.cover;
       if (coverPath == null) {
         try {
           final directoryPath = p.dirname(audioFile.path);
@@ -501,13 +484,11 @@ class MediaScannerService {
         }
       }
 
-      // Create final song with cover path if found
       final finalSong =
           coverPath != null && coverPath != song.cover
               ? song.copyWith(cover: coverPath)
               : song;
 
-      // Return the format expected by optimizedBulkImportSongs
       return {'song': finalSong, 'album': album, 'artists': artists};
     } catch (e) {
       log.e('Error converting audio file ${audioFile.path}: $e');
