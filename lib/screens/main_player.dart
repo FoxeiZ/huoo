@@ -282,8 +282,7 @@ class _PlayControlsSection extends StatelessWidget {
         if (previous is AudioPlayerReady && current is AudioPlayerReady) {
           return previous.playing != current.playing ||
               previous.hasNext != current.hasNext ||
-              previous.hasPrevious != current.hasPrevious ||
-              previous.playlist != current.playlist;
+              previous.hasPrevious != current.hasPrevious;
         }
         return true;
       },
