@@ -525,6 +525,20 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     }
   }
 
+  bool _areWeThereYet(
+    Duration? duration,
+    Duration position, {
+    int offset = 100,
+  }) {
+    if (duration == null) {
+      return false;
+    }
+    if (duration.inMilliseconds <= 0) {
+      return false;
+    }
+    return position.inMilliseconds >= duration.inMilliseconds - offset;
+  }
+
   Future<void> _onPlay(
     AudioPlayerPlayEvent event,
     Emitter<AudioPlayerState> emit,
@@ -555,8 +569,14 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
             0) {
           _player.seek(Duration.zero);
         }
+        await _emitStateFromPlayer(emit, playing: true);
         await _player.play();
-        await _emitStateFromPlayer(emit);
+        if (_player.playing &&
+            _player.currentIndex == _player.sequence.length - 1 &&
+            !_player.hasNext &&
+            _areWeThereYet(_player.duration, _player.position)) {
+          await _player.stop();
+        }
       } catch (e) {
         emit(AudioPlayerError('Failed to play song: ${e.toString()}'));
       }
