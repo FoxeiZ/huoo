@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:huoo/base/db/wrapper.dart';
 import 'package:huoo/models/artist.dart';
 import 'package:huoo/models/many/song_artist.dart';
+import 'package:huoo/models/song_reference.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
@@ -28,7 +29,6 @@ class SongColumns {
   static const String albumId = 'album_id';
   static const String year = 'year';
   static const String language = 'language';
-  static const String performers = 'performers';
   static const String title = 'title';
   static const String trackNumber = 'track_number';
   static const String trackTotal = 'track_total';
@@ -49,7 +49,6 @@ class SongColumns {
     albumId,
     year,
     language,
-    performers,
     title,
     trackNumber,
     trackTotal,
@@ -73,8 +72,6 @@ class Song extends Equatable {
   final String? cover;
   final int? albumId;
   final int? year;
-  final String? language;
-  final List<String> performers;
   final String title;
   final int trackNumber;
   final int trackTotal;
@@ -89,7 +86,7 @@ class Song extends Equatable {
   final DateTime? dateAdded;
   final DateTime? lastPlayed;
   // extra model info
-  final List<Artist>? artists;
+  final List<Artist?> artists;
   final Album? album;
 
   const Song({
@@ -99,8 +96,6 @@ class Song extends Equatable {
     this.cover,
     this.albumId,
     this.year,
-    this.language,
-    this.performers = const [],
     this.title = 'Unknown Title',
     required this.trackNumber,
     required this.trackTotal,
@@ -113,7 +108,7 @@ class Song extends Equatable {
     this.playCount = 0,
     this.dateAdded,
     this.lastPlayed,
-    this.artists,
+    this.artists = const [],
     this.album,
   });
 
@@ -122,12 +117,13 @@ class Song extends Equatable {
     required AudioSourceEnum source,
     required audio_metadata.AudioMetadata metadata,
   }) async {
+    final artists =
+        metadata.performers.map((name) => Artist(name: name)).toList();
+    artists.insert(0, Artist(name: metadata.artist ?? 'Unknown Artist'));
     return Song(
       path: path,
       source: source,
       year: metadata.year?.year,
-      language: metadata.language,
-      performers: metadata.performers,
       title: metadata.title ?? 'Unknown Title',
       trackNumber: metadata.trackNumber ?? 0,
       trackTotal: metadata.trackTotal ?? 0,
@@ -139,6 +135,8 @@ class Song extends Equatable {
       rating: 0.0,
       playCount: 0,
       lastPlayed: null,
+      album: Album(title: metadata.album ?? 'Unknown Album'),
+      artists: artists,
     );
   }
 
@@ -231,14 +229,7 @@ class Song extends Equatable {
       id: map[SongColumns.id] as int?,
       path: map[SongColumns.path] as String,
       year: map[SongColumns.year] as int?,
-      language: map[SongColumns.language] as String?,
       albumId: map[SongColumns.albumId] as int?,
-      performers:
-          (map[SongColumns.performers] as String?)
-              ?.split(',')
-              .map((e) => e.trim())
-              .toList() ??
-          [],
       title: map[SongColumns.title] as String? ?? 'Unknown Title',
       trackNumber: map[SongColumns.trackNumber] as int? ?? 0,
       trackTotal: map[SongColumns.trackTotal] as int? ?? 0,
@@ -267,6 +258,8 @@ class Song extends Equatable {
               ? (map[SongColumns.rating] as num).toDouble()
               : 0.0,
       cover: map[SongColumns.cover] as String?,
+      // Artists will be loaded separately via the many-to-many relationship
+      artists: const [],
     );
   }
 
@@ -276,8 +269,7 @@ class Song extends Equatable {
       path: "",
       source: AudioSourceEnum.local,
       year: null,
-      language: null,
-      performers: const [],
+      artists: const [],
       title: 'Unknown Title',
       trackNumber: 0,
       trackTotal: 0,
@@ -299,8 +291,6 @@ class Song extends Equatable {
       SongColumns.path: path,
       SongColumns.year: year,
       SongColumns.albumId: albumId,
-      SongColumns.language: language,
-      SongColumns.performers: performers.join(', '),
       SongColumns.title: title,
       SongColumns.trackNumber: trackNumber,
       SongColumns.trackTotal: trackTotal,
@@ -317,68 +307,44 @@ class Song extends Equatable {
     };
   }
 
-  static Future<Song> fromMediaItem(MediaItem? mediaItem) async {
+  static Future<Song?> fromMediaItem(String from, MediaItem? mediaItem) async {
     if (mediaItem == null) {
-      return Song.empty();
+      return null;
     }
-    return Song(
-      id: int.tryParse(mediaItem.id),
-      title: mediaItem.title,
-      cover: mediaItem.artUri?.toString(),
-      duration: mediaItem.duration ?? const Duration(seconds: 0),
-      genres: mediaItem.extras?['genres']?.toString().split(', ') ?? [],
-      albumId: mediaItem.extras?['albumId'] as int?,
-      path: mediaItem.extras?['path'] ?? '',
-      source:
-          mediaItem.extras?['source'] == 'AudioSourceEnum.api'
-              ? AudioSourceEnum.api
-              : AudioSourceEnum.local,
-      year: mediaItem.extras?['year'],
-      language: mediaItem.extras?['language'],
-      performers: mediaItem.extras?['performers']?.toString().split(', ') ?? [],
-      trackNumber: mediaItem.extras?['trackNumber'] ?? 0,
-      trackTotal: mediaItem.extras?['trackTotal'] ?? 0,
-      discNumber: mediaItem.extras?['discNumber'] ?? 0,
-      totalDisc: mediaItem.extras?['totalDisc'] ?? 0,
-      lyrics: mediaItem.extras?['lyrics'],
-      rating: (mediaItem.extras?['rating'] as num?)?.toDouble() ?? 0.0,
-      playCount: mediaItem.extras?['playCount'] ?? 0,
-      dateAdded:
-          mediaItem.extras?['dateAdded'] != null
-              ? DateTime.tryParse(mediaItem.extras!['dateAdded'])
-              : null,
-      lastPlayed:
-          mediaItem.extras?['lastPlayed'] != null
-              ? DateTime.tryParse(mediaItem.extras!['lastPlayed'])
-              : null,
+    final helper = DatabaseHelper();
+    final id = int.tryParse(mediaItem.id) ?? -1;
+    log.e(
+      'Song.fromMediaItem called from $from: id=$id, path=${mediaItem.extras?['path']}',
     );
+    return await helper.songProvider.getSongWithDetails(id);
+  }
+
+  static SongReference? songReferenceFromMediaItem(dynamic mediaItem) {
+    if (mediaItem == null) {
+      return null;
+    }
+
+    try {
+      return SongReference(
+        id: int.tryParse(mediaItem.id?.toString() ?? '-1') ?? -1,
+        title: mediaItem.title ?? 'Unknown',
+        path: mediaItem.extras?['path'] ?? '',
+      );
+    } catch (e) {
+      log.e('Error creating song reference from MediaItem: $e');
+      return null;
+    }
   }
 
   Future<MediaItem> toMediaItem() async {
     return MediaItem(
       id: id?.toString() ?? path,
       title: title,
-      artist: await artist,
+      artist: artist,
       artUri: cover != null ? Uri.tryParse(cover!) : null,
       duration: duration,
       genre: genres.isNotEmpty ? genres.join(', ') : null,
       album: await getAlbum().then((album) => album.title),
-      extras: {
-        'path': path,
-        'source': source.toString(),
-        'year': year,
-        'language': language,
-        'performers': performers,
-        'trackNumber': trackNumber,
-        'trackTotal': trackTotal,
-        'discNumber': discNumber,
-        'totalDisc': totalDisc,
-        'lyrics': lyrics,
-        'rating': rating ?? 0.0,
-        'playCount': playCount,
-        'dateAdded': dateAdded?.toIso8601String(),
-        'lastPlayed': lastPlayed?.toIso8601String(),
-      },
     );
   }
 
@@ -399,8 +365,10 @@ class Song extends Equatable {
   String get displayDuration => _formatDuration(duration);
   String get genre => genres.isNotEmpty ? genres.join(', ') : 'Unknown Genre';
   String get formattedYear => year?.toString() ?? 'Unknown Year';
-  String get performer =>
-      performers.isNotEmpty ? performers.join(', ') : 'Various Artists';
+  String get artist =>
+      artists.isNotEmpty
+          ? artists.map((e) => e?.name ?? 'Unknown').join(', ')
+          : 'Various Artists';
   bool get isLocal => source == AudioSourceEnum.local;
   bool get isRemote => source == AudioSourceEnum.api;
 
@@ -423,7 +391,6 @@ class Song extends Equatable {
     int? albumId,
     int? year,
     String? language,
-    List<String>? performers,
     String? title,
     int? trackNumber,
     int? trackTotal,
@@ -446,8 +413,6 @@ class Song extends Equatable {
       cover: cover ?? this.cover,
       albumId: albumId ?? this.albumId,
       year: year ?? this.year,
-      language: language ?? this.language,
-      performers: performers ?? this.performers,
       title: title ?? this.title,
       trackNumber: trackNumber ?? this.trackNumber,
       trackTotal: trackTotal ?? this.trackTotal,
@@ -474,15 +439,15 @@ class Song extends Equatable {
   }
 
   Future<List<Artist>> getArtists() async {
-    if (artists != null && artists!.isNotEmpty) {
-      return artists!;
+    if (artists.isNotEmpty) {
+      return artists.whereType<Artist>().toList();
     }
-    return DatabaseHelper().songArtistProvider
-        .getArtistsBySongId(id ?? 0)
-        .then((artists) => artists.isNotEmpty ? artists : [Artist.empty()]);
+    return await DatabaseHelper().songArtistProvider.getArtistsBySongId(
+      id ?? 0,
+    );
   }
 
-  Future<String> get artist {
+  Future<String> get artistName {
     return getArtists().then(
       (artists) =>
           artists.isNotEmpty
@@ -503,6 +468,131 @@ class Song extends Equatable {
         .then((album) => album ?? Album.empty());
   }
 
+  Future<Song> saveWithArtists(List<Artist> artistList) async {
+    final dbHelper = DatabaseHelper();
+
+    final savedSong = await dbHelper.songProvider.insert(this);
+
+    for (final artist in artistList) {
+      Artist savedArtist;
+      final existingArtist = await dbHelper.artistProvider.getByName(
+        artist.name,
+      );
+      if (existingArtist != null) {
+        savedArtist = existingArtist;
+      } else {
+        savedArtist = await dbHelper.artistProvider.insert(artist);
+      }
+
+      await dbHelper.songArtistProvider.insert(
+        SongArtist(song: savedSong, artist: savedArtist),
+      );
+    }
+
+    return savedSong.copyWith(artists: artistList);
+  }
+
+  Future<Song> updateArtists(List<Artist> newArtists) async {
+    final dbHelper = DatabaseHelper();
+
+    if (id == null) {
+      throw Exception(
+        'Cannot update artists for a song that has not been saved yet',
+      );
+    }
+
+    final existingRelationships = await dbHelper.songArtistProvider.getBySongId(
+      id!,
+    );
+    for (final relationship in existingRelationships) {
+      await dbHelper.songArtistProvider.db.delete(
+        SongArtistColumns.table,
+        where: '${SongArtistColumns.id} = ?',
+        whereArgs: [relationship.id!],
+      );
+    }
+
+    List<Artist> savedArtists = [];
+    for (final artist in newArtists) {
+      Artist savedArtist;
+      final existingArtist = await dbHelper.artistProvider.getByName(
+        artist.name,
+      );
+      if (existingArtist != null) {
+        savedArtist = existingArtist;
+      } else {
+        savedArtist = await dbHelper.artistProvider.insert(artist);
+      }
+
+      await dbHelper.songArtistProvider.insert(
+        SongArtist(song: this, artist: savedArtist),
+      );
+
+      savedArtists.add(savedArtist);
+    }
+
+    return copyWith(artists: savedArtists);
+  }
+
+  Future<Song> addArtist(Artist artist) async {
+    final dbHelper = DatabaseHelper();
+
+    if (id == null) {
+      throw Exception(
+        'Cannot add artist to a song that has not been saved yet',
+      );
+    }
+
+    final existingArtists = await getArtists();
+    if (existingArtists.any((a) => a.name == artist.name)) {
+      return this; // Artist already exists
+    }
+
+    Artist savedArtist;
+    final existingArtist = await dbHelper.artistProvider.getByName(artist.name);
+    if (existingArtist != null) {
+      savedArtist = existingArtist;
+    } else {
+      savedArtist = await dbHelper.artistProvider.insert(artist);
+    }
+
+    await dbHelper.songArtistProvider.insert(
+      SongArtist(song: this, artist: savedArtist),
+    );
+
+    final updatedArtists = [...existingArtists, savedArtist];
+    return copyWith(artists: updatedArtists);
+  }
+
+  Future<Song> removeArtist(Artist artist) async {
+    final dbHelper = DatabaseHelper();
+
+    if (id == null) {
+      throw Exception(
+        'Cannot remove artist from a song that has not been saved yet',
+      );
+    }
+
+    final relationships = await dbHelper.songArtistProvider.getBySongId(id!);
+    final relationshipToRemove = relationships.firstWhere(
+      (r) => r.artist.name == artist.name,
+      orElse: () => throw Exception('Artist not found in this song'),
+    );
+
+    await dbHelper.songArtistProvider.db.delete(
+      SongArtistColumns.table,
+      where: '${SongArtistColumns.id} = ?',
+      whereArgs: [relationshipToRemove.id!],
+    );
+
+    final updatedArtists =
+        artists
+            .where((a) => a?.name != artist.name)
+            .whereType<Artist>()
+            .toList();
+    return copyWith(artists: updatedArtists);
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -510,8 +600,6 @@ class Song extends Equatable {
     source,
     cover,
     year,
-    language,
-    performers,
     title,
     trackNumber,
     trackTotal,
@@ -543,7 +631,6 @@ class SongProvider extends BaseProvider<Song> {
         ${SongColumns.albumId} INTEGER,
         ${SongColumns.year} INT,
         ${SongColumns.language} TEXT,
-        ${SongColumns.performers} TEXT,
         ${SongColumns.title} TEXT NOT NULL,
         ${SongColumns.trackNumber} INTEGER,
         ${SongColumns.trackTotal} INTEGER,

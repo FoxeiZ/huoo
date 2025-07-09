@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/screens/permissions_screen.dart';
+import 'package:huoo/services/setup_wizard_manager.dart';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
@@ -154,13 +155,19 @@ class SignInScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 56,
                     child: OutlinedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
+                        // Mark sign-in step as completed (skipped as guest)
+                        await SetupWizardManager.markStepCompleted(SetupStep.signIn);
+                        await SetupWizardManager.setCurrentStep(SetupStep.permissions);
+                        
                         // Skip authentication and go to permissions
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const PermissionsScreen(),
-                          ),
-                        );
+                        if (context.mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => const PermissionsScreen(),
+                            ),
+                          );
+                        }
                       },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: theme.colorScheme.primary),

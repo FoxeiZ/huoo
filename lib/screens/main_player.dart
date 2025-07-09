@@ -551,11 +551,6 @@ class _SongTextInfoSectionState extends State<_SongTextInfoSection> {
       builder: (context, state) {
         Song? audioMetadata =
             state is AudioPlayerReady ? state.songMetadata : null;
-        audioMetadata?.artist.then((artist) {
-          setState(() {
-            artistName = artist;
-          });
-        });
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -584,7 +579,7 @@ class _SongTextInfoSectionState extends State<_SongTextInfoSection> {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        artistName,
+                        audioMetadata?.artist ?? "Unknown Artist",
                         style: TextStyle(
                           fontSize: 16,
                           color: Theme.of(
