@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/screens/sign_in_screen.dart';
+import 'package:huoo/services/setup_wizard_manager.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
@@ -134,12 +141,18 @@ class WelcomeScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => const SignInScreen(),
-                        ),
-                      );
+                    onPressed: () async {
+                      // Mark welcome step as completed
+                      await SetupWizardManager.markStepCompleted(SetupStep.welcome);
+                      await SetupWizardManager.setCurrentStep(SetupStep.signIn);
+                      
+                      if (mounted) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const SignInScreen(),
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,

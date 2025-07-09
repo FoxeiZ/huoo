@@ -4,7 +4,7 @@ import 'package:huoo/models/song.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/screens/main_player.dart';
-import 'package:path/path.dart' as p;
+import 'package:huoo/widgets/common/song_tile.dart';
 
 class SongsListWidget extends StatefulWidget {
   const SongsListWidget({super.key});
@@ -141,87 +141,13 @@ class _SongsListWidgetState extends State<SongsListWidget> {
         itemCount: _songs.length,
         itemBuilder: (context, index) {
           final song = _songs[index];
-          return _buildSongTile(song);
+          return SongTile(
+            song: song,
+            onTap: () => _playSong(song),
+            onMorePressed: () => _showSongOptions(song),
+            formatDuration: _formatDuration,
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildSongTile(Song song) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1DB954).withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child:
-              song.cover != null && song.cover!.isNotEmpty
-                  ? ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.asset(
-                      song.cover!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.music_note,
-                          color: Color(0xFF1DB954),
-                        );
-                      },
-                    ),
-                  )
-                  : const Icon(Icons.music_note, color: Color(0xFF1DB954)),
-        ),
-        title: Text(
-          song.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (song.performers.isNotEmpty)
-              Text(
-                song.performers.first,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            Text(
-              p.basename(song.path),
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (song.duration.inSeconds > 0)
-              Text(
-                _formatDuration(song.duration),
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.white54),
-              onPressed: () => _showSongOptions(song),
-            ),
-          ],
-        ),
-        onTap: () => _playSong(song),
       ),
     );
   }
@@ -335,9 +261,7 @@ class _SongsListWidgetState extends State<SongsListWidget> {
                 _buildInfoRow('Title', song.title),
                 _buildInfoRow(
                   'Artist',
-                  song.performers.isNotEmpty
-                      ? song.performers.first
-                      : 'Unknown',
+                  song.artist.isNotEmpty ? song.artist : 'Unknown',
                 ),
                 _buildInfoRow('Duration', _formatDuration(song.duration)),
                 _buildInfoRow('Path', song.path),

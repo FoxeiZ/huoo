@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:huoo/screens/folder_selection_screen.dart';
+import 'package:huoo/services/setup_wizard_manager.dart';
 
 enum AppPermissionStatus { granted, denied, checking }
 
@@ -160,13 +161,19 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               child: ElevatedButton(
                 onPressed:
                     _storageGranted && !_isCheckingPermissions
-                        ? () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => const FolderSelectionScreen(),
-                            ),
-                          );
+                        ? () async {
+                          // Mark permissions step as completed
+                          await SetupWizardManager.markStepCompleted(SetupStep.permissions);
+                          await SetupWizardManager.setCurrentStep(SetupStep.folders);
+                          
+                          if (mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const FolderSelectionScreen(),
+                              ),
+                            );
+                          }
                         }
                         : null,
                 style: ElevatedButton.styleFrom(
@@ -207,12 +214,18 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
             // Skip for now option
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const FolderSelectionScreen(),
-                  ),
-                );
+              onPressed: () async {
+                // Mark permissions as completed even if skipped
+                await SetupWizardManager.markStepCompleted(SetupStep.permissions);
+                await SetupWizardManager.setCurrentStep(SetupStep.folders);
+                
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const FolderSelectionScreen(),
+                    ),
+                  );
+                }
               },
               child: Text(
                 'Skip for now',

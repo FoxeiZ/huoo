@@ -103,9 +103,9 @@ class MiniPlayer extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (currentSong.performers.isNotEmpty)
+                          if (currentSong.artist.isNotEmpty)
                             Text(
-                              currentSong.performers.first,
+                              currentSong.artist,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,

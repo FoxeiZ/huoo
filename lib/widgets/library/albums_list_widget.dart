@@ -420,8 +420,8 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               subtitle: Text(
-                                song.performers.isNotEmpty
-                                    ? song.performers.first
+                                song.artist.isNotEmpty
+                                    ? song.artist
                                     : 'Unknown Artist',
                                 style: const TextStyle(color: Colors.white70),
                                 maxLines: 1,

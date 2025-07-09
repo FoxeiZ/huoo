@@ -10,7 +10,6 @@ import 'package:logger/logger.dart';
 
 import 'package:huoo/models/song.dart';
 import 'package:huoo/models/artist.dart';
-import 'package:huoo/models/album.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/helpers/database/types.dart';
 
@@ -443,88 +442,73 @@ class MediaScannerService {
     File audioFile,
   ) async {
     try {
-      // Extract basic info from file path and name
-      final fileName = p.basenameWithoutExtension(audioFile.path);
-      final directoryPath = p.dirname(audioFile.path);
-      final parentDirectory = p.basename(directoryPath);
+      // Use Song.fromLocalFile which already reads metadata properly
+      final song = await Song.fromLocalFile(audioFile.path);
 
-      // Try to extract artist and album from folder structure
-      // Common patterns: Artist/Album/Song or Music/Artist - Album/Song
-      final pathSegments = p.split(directoryPath);
-      String albumTitle = 'Unknown Album';
-      String artistName = 'Unknown Artist';
+      // Get album info from the song (fromLocalFile already extracts this)
+      final album = await song.getAlbum();
 
-      if (pathSegments.length >= 2) {
-        // Use parent directory as album, grandparent as artist if available
-        albumTitle = parentDirectory;
-        if (pathSegments.length >= 3) {
-          artistName = pathSegments[pathSegments.length - 2];
-        }
-      }
-
-      // Try to parse filename for artist - title pattern
-      String title = fileName;
-      if (fileName.contains(' - ')) {
-        final parts = fileName.split(' - ');
-        if (parts.length >= 2) {
-          artistName = parts[0].trim();
-          title = parts.sublist(1).join(' - ').trim();
-        }
-      }
-
-      // Create album
-      final album = Album(title: albumTitle, releaseDate: null);
-
-      // Create artist
-      final artist = Artist(name: artistName);
-
-      // Process cover image if available (look for common cover art files)
-      String? coverPath;
-      try {
-        final coverFiles = [
-          'cover.jpg',
-          'cover.png',
-          'folder.jpg',
-          'folder.png',
-          'album.jpg',
-          'album.png',
-        ];
-        for (final coverFileName in coverFiles) {
-          final coverFile = File(p.join(directoryPath, coverFileName));
-          if (await coverFile.exists()) {
-            final coverData = await coverFile.readAsBytes();
-            coverPath = await _processImageInIsolate(coverData);
-            break;
+      // Extract artists from metadata or use fallback
+      final artists = <Artist>[];
+      if (song.artists.isNotEmpty) {
+        // Use artists from metadata
+        for (final artist in song.artists) {
+          if (artist != null && artist.name.isNotEmpty) {
+            artists.add(artist);
           }
         }
-      } catch (e) {
-        log.w('Failed to process cover art for ${audioFile.path}: $e');
       }
 
-      // Create song
-      final song = Song(
-        path: audioFile.path,
-        source: AudioSourceEnum.local,
-        title: title,
-        duration:
-            Duration
-                .zero, // We'll need a metadata library for accurate duration
-        trackNumber: 0,
-        trackTotal: 0,
-        discNumber: 0,
-        totalDisc: 0,
-        genres: [],
-        performers: [artistName],
-        cover: coverPath,
-        dateAdded: DateTime.now(),
-      );
+      // If no artists found, create a default one from the directory or filename
+      if (artists.isEmpty) {
+        final directoryPath = p.dirname(audioFile.path);
+        final parentDirName = p.basename(directoryPath);
 
-      // Return the format expected by bulkImportSongs
-      return {
-        'song': song,
-        'album': album,
-        'artists': [artist], // bulkImportSongs expects a list of artists
-      };
+        // Try to extract artist from directory structure or use fallback
+        final artistName =
+            parentDirName.isNotEmpty && parentDirName != '.'
+                ? parentDirName
+                : 'Unknown Artist';
+
+        artists.add(Artist(name: artistName));
+      }
+
+      // Process cover image if available (look for common cover art files)
+      String? coverPath = song.cover; // Use cover from metadata first
+
+      if (coverPath == null) {
+        try {
+          final directoryPath = p.dirname(audioFile.path);
+          final coverFiles = [
+            'cover.jpg',
+            'cover.png',
+            'folder.jpg',
+            'folder.png',
+            'album.jpg',
+            'album.png',
+          ];
+
+          for (final coverFileName in coverFiles) {
+            final coverFile = File(p.join(directoryPath, coverFileName));
+            if (await coverFile.exists()) {
+              final coverData = await coverFile.readAsBytes();
+              coverPath = await _processImageInIsolate(coverData);
+              break;
+            }
+          }
+        } catch (e) {
+          log.w('Failed to process cover art for ${audioFile.path}: $e');
+        }
+      }
+
+      // Create final song with cover path if found
+      final finalSong =
+          coverPath != null && coverPath != song.cover
+              ? song.copyWith(cover: coverPath)
+              : song;
+
+      // Return the format expected by optimizedBulkImportSongs
+      return {'song': finalSong, 'album': album, 'artists': artists};
     } catch (e) {
       log.e('Error converting audio file ${audioFile.path}: $e');
       return null;

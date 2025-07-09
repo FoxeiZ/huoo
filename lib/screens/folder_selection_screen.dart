@@ -4,6 +4,7 @@ import 'package:huoo/services/media_scanner.dart';
 import 'package:huoo/helpers/database/types.dart';
 import 'package:huoo/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:huoo/services/setup_wizard_manager.dart';
 
 class FolderSelectionScreen extends StatefulWidget {
   final bool isFromSettings;
@@ -835,8 +836,12 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
+                  
+                  // Mark setup as skipped but completed
+                  await SetupWizardManager.skipSetup();
+                  
                   _navigateToMainApp();
                 },
                 child: const Text('Continue'),
@@ -846,12 +851,20 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
     );
   }
 
-  void _navigateToMainApp() {
+  void _navigateToMainApp() async {
+    // Mark folders step as completed and setup as complete
+    if (!widget.isFromSettings) {
+      await SetupWizardManager.markStepCompleted(SetupStep.folders);
+      await SetupWizardManager.markSetupCompleted();
+    }
+    
     // Navigate to main app using your friend's beautiful HomeScreen
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-      (route) => false,
-    );
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override

@@ -6,8 +6,9 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:just_audio/just_audio.dart';
 
-import 'package:huoo/services/playlist_persistence_service.dart';
+import 'package:huoo/services/lightweight_player_persistence.dart';
 import 'package:huoo/models/song.dart';
+import 'package:huoo/models/song_reference.dart';
 
 part 'audio_player_event.dart';
 part 'audio_player_state.dart';
@@ -89,12 +90,13 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       if (state is AudioPlayerReady) {
         final currentReadyState = state as AudioPlayerReady;
         if (currentReadyState.playlist.isNotEmpty) {
+          // Extract lightweight song references from audio sources
+          final songReferences = PlayerPersistenceService.extractSongReferences(
+            currentReadyState.playlist,
+          );
+
           PlayerPersistenceService.savePlayerState(
-            songs: await Future.wait(
-              currentReadyState.playlist
-                  .map((source) => Song.fromMediaItem(source.tag))
-                  .toList(),
-            ),
+            songReferences: songReferences,
             currentIndex: currentReadyState.currentIndex,
             currentPosition: currentReadyState.position,
             loopMode: currentReadyState.loopMode.name,
@@ -190,6 +192,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         songMetadata:
             songMetadata ??
             (await Song.fromMediaItem(
+              "_emitStateFromPlayer",
               _player.sequenceState.currentSource?.tag,
             )),
         loading:
@@ -229,13 +232,29 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       }
 
       final savedState = await PlayerPersistenceService.loadPlayerState();
-      if (savedState != null && savedState.songs.isNotEmpty) {
+      if (savedState != null && savedState.songReferences.isNotEmpty) {
+        // Reconstruct full Song objects from lightweight references
+        final songs = await PlayerPersistenceService.reconstructSongs(
+          savedState.songReferences,
+        );
+
+        if (songs.isEmpty) {
+          log.w(
+            'No valid songs reconstructed from saved state, initializing empty.',
+          );
+          await _emitStateFromPlayer(emit);
+          _isPlayerInitialized = true;
+          return;
+        }
+
         final audioSources = await Future.wait(
-          savedState.songs.map((song) => song.toAudioSource()).toList(),
+          songs.map((song) => song.toAudioSource()).toList(),
         );
 
         if (audioSources.isEmpty) {
-          log.w('No valid audio sources from saved state, initializing empty.');
+          log.w(
+            'No valid audio sources from reconstructed songs, initializing empty.',
+          );
           await _emitStateFromPlayer(emit);
           _isPlayerInitialized = true;
           return;
@@ -263,12 +282,12 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         int? actualCurrentIndex = savedState.currentIndex;
         if (sequenceState.currentSource?.tag != null) {
           currentSong = await Song.fromMediaItem(
+            "_onInitialize",
             sequenceState.currentSource!.tag,
           );
           actualCurrentIndex = sequenceState.currentIndex;
-        } else if (savedState.songs.isNotEmpty &&
-            savedState.currentIndex < savedState.songs.length) {
-          currentSong = savedState.songs[savedState.currentIndex];
+        } else if (songs.isNotEmpty && savedState.currentIndex < songs.length) {
+          currentSong = songs[savedState.currentIndex];
         }
 
         await _emitStateFromPlayer(emit);
@@ -344,8 +363,13 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       log.d(
         'New playlist loaded. Index: ${_player.currentIndex}, Song: ${currentSong?.title}',
       );
+
+      // Save using lightweight references
+      final songReferences =
+          event.songs.map((song) => SongReference.fromSong(song)).toList();
+
       PlayerPersistenceService.savePlayerState(
-        songs: event.songs,
+        songReferences: songReferences,
         currentIndex: _player.currentIndex,
         currentPosition: _player.position,
         loopMode: _player.loopMode.name,
@@ -665,15 +689,25 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     final currentState = state;
     if (currentState is AudioPlayerReady) {
       final currentPlaylist = event.sequence;
+      if (currentPlaylist.isEmpty) {
+        log.w('Received empty playlist in sequence update');
+        emit(
+          currentState.copyWith(
+            playlist: currentPlaylist,
+            currentIndex: null,
+            songMetadata: null,
+            hasNext: false,
+            hasPrevious: false,
+          ),
+        );
+        return;
+      }
       final currentCurrentIndex = event.currentIndex ?? _player.currentIndex;
-      final currentCurrentSource =
-          event.currentSource ?? _player.audioSource as IndexedAudioSource?;
 
       emit(
         currentState.copyWith(
           playlist: currentPlaylist,
           currentIndex: currentCurrentIndex,
-          songMetadata: await Song.fromMediaItem(currentCurrentSource?.tag),
           hasNext: event.hasNext,
           hasPrevious: event.hasPrevious,
         ),
