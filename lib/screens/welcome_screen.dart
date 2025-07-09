@@ -141,6 +141,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () async {
+                      // Store context reference before async operations
+                      final navigator = Navigator.of(context);
+
                       // Mark welcome step as completed
                       await SetupWizardManager.markStepCompleted(
                         SetupStep.welcome,
@@ -148,7 +151,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       await SetupWizardManager.setCurrentStep(SetupStep.signIn);
 
                       if (mounted) {
-                        Navigator.of(context).pushReplacement(
+                        navigator.pushReplacement(
                           MaterialPageRoute(
                             builder: (context) => const SignInScreen(),
                           ),
