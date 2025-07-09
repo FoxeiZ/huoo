@@ -157,9 +157,13 @@ class SignInScreen extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         // Mark sign-in step as completed (skipped as guest)
-                        await SetupWizardManager.markStepCompleted(SetupStep.signIn);
-                        await SetupWizardManager.setCurrentStep(SetupStep.permissions);
-                        
+                        await SetupWizardManager.markStepCompleted(
+                          SetupStep.signIn,
+                        );
+                        await SetupWizardManager.setCurrentStep(
+                          SetupStep.permissions,
+                        );
+
                         // Skip authentication and go to permissions
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(

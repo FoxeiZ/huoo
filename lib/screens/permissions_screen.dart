@@ -162,12 +162,19 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 onPressed:
                     _storageGranted && !_isCheckingPermissions
                         ? () async {
+                          // Store context reference before async operations
+                          final navigator = Navigator.of(context);
+
                           // Mark permissions step as completed
-                          await SetupWizardManager.markStepCompleted(SetupStep.permissions);
-                          await SetupWizardManager.setCurrentStep(SetupStep.folders);
-                          
+                          await SetupWizardManager.markStepCompleted(
+                            SetupStep.permissions,
+                          );
+                          await SetupWizardManager.setCurrentStep(
+                            SetupStep.folders,
+                          );
+
                           if (mounted) {
-                            Navigator.of(context).pushReplacement(
+                            navigator.pushReplacement(
                               MaterialPageRoute(
                                 builder:
                                     (context) => const FolderSelectionScreen(),
@@ -215,12 +222,17 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             // Skip for now option
             TextButton(
               onPressed: () async {
+                // Store context reference before async operations
+                final navigator = Navigator.of(context);
+
                 // Mark permissions as completed even if skipped
-                await SetupWizardManager.markStepCompleted(SetupStep.permissions);
+                await SetupWizardManager.markStepCompleted(
+                  SetupStep.permissions,
+                );
                 await SetupWizardManager.setCurrentStep(SetupStep.folders);
-                
+
                 if (mounted) {
-                  Navigator.of(context).pushReplacement(
+                  navigator.pushReplacement(
                     MaterialPageRoute(
                       builder: (context) => const FolderSelectionScreen(),
                     ),

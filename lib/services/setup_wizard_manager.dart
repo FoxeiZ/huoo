@@ -56,13 +56,13 @@ enum SetupStep {
 }
 
 /// Manages the app's first-time setup wizard progress and completion status.
-/// 
+///
 /// The setup wizard consists of multiple steps:
 /// 1. Welcome Screen - Introduction to the app
 /// 2. Sign In Screen - User account setup (optional)
 /// 3. Permissions Screen - Required app permissions
 /// 4. Folder Selection Screen - Music folder setup
-/// 
+///
 /// The app will only show the setup wizard on first launch or if the user
 /// hasn't completed all required steps.
 class SetupWizardManager {
@@ -105,7 +105,7 @@ class SetupWizardManager {
   static Future<void> setCurrentStep(SetupStep step) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_currentStepKey, step.stepIndex);
-    
+
     // Also mark first launch as complete when we start the wizard
     if (step != SetupStep.welcome) {
       await markFirstLaunchComplete();
@@ -115,7 +115,7 @@ class SetupWizardManager {
   /// Mark a specific step as completed
   static Future<void> markStepCompleted(SetupStep step) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     String key;
     switch (step) {
       case SetupStep.welcome:
@@ -133,9 +133,9 @@ class SetupWizardManager {
       case SetupStep.completed:
         return; // Handle this separately
     }
-    
+
     await prefs.setBool(key, true);
-    
+
     // Check if all steps are completed
     await _checkAndMarkSetupComplete();
   }
@@ -143,7 +143,7 @@ class SetupWizardManager {
   /// Check if a specific step has been completed
   static Future<bool> isStepCompleted(SetupStep step) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     String key;
     switch (step) {
       case SetupStep.welcome:
@@ -161,7 +161,7 @@ class SetupWizardManager {
       case SetupStep.completed:
         return await isSetupCompleted();
     }
-    
+
     return prefs.getBool(key) ?? false;
   }
 
@@ -171,7 +171,7 @@ class SetupWizardManager {
     if (await isSetupCompleted()) {
       return SetupStep.completed;
     }
-    
+
     // Find the next incomplete step
     for (int i = 0; i < SetupStep.values.length - 1; i++) {
       final step = SetupStep.fromIndex(i);
@@ -179,7 +179,7 @@ class SetupWizardManager {
         return step;
       }
     }
-    
+
     return SetupStep.completed;
   }
 
@@ -187,14 +187,17 @@ class SetupWizardManager {
   static Future<void> markSetupCompleted() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_setupCompletedKey, true);
-    await prefs.setString(_setupCompletedDateKey, DateTime.now().toIso8601String());
+    await prefs.setString(
+      _setupCompletedDateKey,
+      DateTime.now().toIso8601String(),
+    );
     await setCurrentStep(SetupStep.completed);
   }
 
   /// Reset the setup wizard (useful for testing or user requesting reset)
   static Future<void> resetSetup() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     await Future.wait([
       prefs.remove(_setupCompletedKey),
       prefs.remove(_currentStepKey),
@@ -211,17 +214,17 @@ class SetupWizardManager {
     if (await isSetupCompleted()) {
       return 1.0;
     }
-    
+
     int completedSteps = 0;
     const totalSteps = 4; // welcome, signIn, permissions, folders
-    
+
     for (int i = 0; i < totalSteps; i++) {
       final step = SetupStep.fromIndex(i);
       if (await isStepCompleted(step)) {
         completedSteps++;
       }
     }
-    
+
     return completedSteps / totalSteps;
   }
 
@@ -229,7 +232,7 @@ class SetupWizardManager {
   static Future<DateTime?> getSetupCompletedDate() async {
     final prefs = await SharedPreferences.getInstance();
     final dateString = prefs.getString(_setupCompletedDateKey);
-    
+
     if (dateString != null) {
       try {
         return DateTime.parse(dateString);
@@ -237,7 +240,7 @@ class SetupWizardManager {
         return null;
       }
     }
-    
+
     return null;
   }
 
@@ -246,7 +249,7 @@ class SetupWizardManager {
     // Check if all required steps are completed
     final welcomeCompleted = await isStepCompleted(SetupStep.welcome);
     final permissionsCompleted = await isStepCompleted(SetupStep.permissions);
-    
+
     // Sign-in is optional, folders are optional (can be set up later)
     // But we require at least welcome and permissions
     if (welcomeCompleted && permissionsCompleted) {
@@ -265,7 +268,7 @@ class SetupWizardManager {
   static Future<bool> shouldShowSetupWizard() async {
     final isFirstTime = await isFirstLaunch();
     final isCompleted = await isSetupCompleted();
-    
+
     return isFirstTime || !isCompleted;
   }
 

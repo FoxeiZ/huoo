@@ -10,7 +10,6 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -143,9 +142,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       // Mark welcome step as completed
-                      await SetupWizardManager.markStepCompleted(SetupStep.welcome);
+                      await SetupWizardManager.markStepCompleted(
+                        SetupStep.welcome,
+                      );
                       await SetupWizardManager.setCurrentStep(SetupStep.signIn);
-                      
+
                       if (mounted) {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
