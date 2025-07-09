@@ -60,13 +60,17 @@ class _SetupWizardDebugWidgetState extends State<SetupWizardDebugWidget> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.of(context).pop();
+                  // Store context references before async operations
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                  navigator.pop();
 
                   await SetupWizardManager.resetSetup();
                   _loadSetupStatus();
 
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Setup wizard has been reset'),
                         backgroundColor: Color(0xFF1DB954),

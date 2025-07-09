@@ -47,7 +47,7 @@ class PlayIndicatorWidget extends StatelessWidget {
         if (!isCurrentSong) {
           // Song is not current, show a subtle play button
           iconData = Icons.play_arrow;
-          iconColor = iconColor.withOpacity(0.5);
+          iconColor = iconColor.withValues(alpha: 0.5);
         } else if (isLoading) {
           // Song is current but loading
           return SizedBox(
