@@ -28,15 +28,37 @@ abstract class BaseProvider<T> {
     });
   }
 
-  Future<int> update(T item, [DatabaseOperation? dbWrapper]) {
+  Map<String, dynamic> filterMap(
+    Map<String, dynamic> map, {
+    bool filterNulls = true,
+    bool filterEmptyStrings = false,
+    List<String>? filterColumns,
+  }) {
+    return Map.fromEntries(
+      map.entries.where((entry) {
+        if (filterColumns != null && !filterColumns.contains(entry.key)) {
+          return false;
+        }
+
+        final value = entry.value;
+        if (filterNulls && value == null) return false;
+        if (filterEmptyStrings && value is String && value.isEmpty) {
+          return false;
+        }
+        return true;
+      }),
+    );
+  }
+
+  Future<int> update(T item, {DatabaseOperation? dbWrapper, int? itemId}) {
     final wrapper = dbWrapper ?? _dbOperation;
-    final id = getItemId(item);
+    final id = itemId ?? getItemId(item);
     if (id == null) {
       throw ArgumentError('Item must have a valid ID for update');
     }
     return wrapper.update(
       tableName,
-      itemToMap(item),
+      filterMap(itemToMap(item)),
       where: '$idColumnName = ?',
       whereArgs: [id],
     );
@@ -47,10 +69,23 @@ abstract class BaseProvider<T> {
     final id = getItemId(item);
     if (id != null && id != 0) {
       final oldItem = getById(id, wrapper);
-      if (oldItem != item) return update(item, wrapper).then((_) => item);
+      if (oldItem != item) {
+        return update(item, dbWrapper: wrapper).then((_) => item);
+      }
       return Future.value(item);
-    } else {}
-    return insert(item, wrapper);
+    } else {
+      return getByItem(item, wrapper).then((existingItem) {
+        if (existingItem != null) {
+          return update(
+            item,
+            dbWrapper: wrapper,
+            itemId: getItemId(existingItem),
+          ).then((_) => item);
+        } else {
+          return insert(item, wrapper);
+        }
+      });
+    }
   }
 
   Future<void> insertAll(List<T> items, [DatabaseOperation? dbWrapper]) {
@@ -75,16 +110,14 @@ abstract class BaseProvider<T> {
   Future<T?> getByItem(T item, [DatabaseOperation? dbWrapper]) async {
     final wrapper = dbWrapper ?? _dbOperation;
     final cpItem = copyWithId(item, null);
-    final itemMap = itemToMap(cpItem);
-    final nonNullColumns =
-        columns.where((col) => itemMap[col] != null).toList();
-    if (nonNullColumns.isEmpty) return null;
+    final filteredMap = filterMap(itemToMap(cpItem), filterColumns: columns);
+    if (filteredMap.isEmpty) return null;
 
     return wrapper
         .query(
           tableName,
-          where: nonNullColumns.map((col) => '$col = ?').join(' AND '),
-          whereArgs: nonNullColumns.map((col) => itemMap[col]).toList(),
+          where: filteredMap.keys.map((col) => '$col = ?').join(' AND '),
+          whereArgs: filteredMap.values.toList(),
         )
         .then((maps) => maps.isNotEmpty ? itemFromMap(maps.first) : null);
   }

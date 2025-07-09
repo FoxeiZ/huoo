@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:image/image.dart';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart'
     as audio_metadata;
@@ -142,8 +143,10 @@ class Song extends Equatable {
   }
 
   static Future<String?> _getOrSaveCoverPath(
-    audio_metadata.AudioMetadata metadata,
-  ) async {
+    audio_metadata.AudioMetadata metadata, {
+    int? resizeWidth,
+    int? resizeHeight,
+  }) async {
     if (metadata.pictures.isEmpty) return null;
 
     final appDir = await getApplicationDocumentsDirectory();
@@ -152,15 +155,42 @@ class Song extends Equatable {
       await coverDir.create();
     }
 
+    Image? coverImage;
     final coverData = metadata.pictures.first;
-    final checksum = md5.convert(coverData.bytes);
+    if (coverData.bytes.isEmpty) return null;
+    final fileFormat = coverData.mimetype.split('/').last;
+    switch (fileFormat) {
+      case 'jpeg':
+      case 'jpg':
+        coverImage = decodeJpg(coverData.bytes);
+        break;
+      case 'png':
+        coverImage = decodePng(coverData.bytes);
+        break;
+      case 'webp':
+        coverImage = decodeWebP(coverData.bytes);
+        break;
+      case 'gif':
+        coverImage = decodeGif(coverData.bytes);
+        break;
+      default:
+        // unsupported format
+        return null;
+    }
+    coverImage = copyResize(
+      coverImage!,
+      width: resizeWidth ?? 500,
+      height: resizeHeight ?? 500,
+    );
+    final imageBytes = coverImage.getBytes();
+    final checksum = md5.convert(imageBytes);
     final fileName = checksum.toString();
     final coverFile = File('${coverDir.path}/$fileName');
     if (await coverFile.exists()) {
       return coverFile.path;
     }
 
-    await coverFile.writeAsBytes(coverData.bytes);
+    await coverFile.writeAsBytes(imageBytes);
     return coverFile.path;
   }
 
@@ -511,7 +541,7 @@ class SongProvider extends BaseProvider<Song> {
         ${SongColumns.id} INTEGER PRIMARY KEY AUTOINCREMENT,
         ${SongColumns.path} TEXT NOT NULL UNIQUE,
         ${SongColumns.albumId} INTEGER,
-        ${SongColumns.year} TEXT,
+        ${SongColumns.year} INT,
         ${SongColumns.language} TEXT,
         ${SongColumns.performers} TEXT,
         ${SongColumns.title} TEXT NOT NULL,
