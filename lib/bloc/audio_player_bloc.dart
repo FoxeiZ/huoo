@@ -32,6 +32,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   StreamSubscription<SequenceState?>? _sequenceStateSubscription;
 
   Timer? _sleepTimerInstance;
+  bool _isPlayerInitialized = false;
 
   AudioPlayerBloc() : super(AudioPlayerInitial()) {
     on<AddTestSongEvent>((event, emit) async {
@@ -39,6 +40,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       add(AudioPlayerAddSongEvent(song!));
     });
     on<AudioPlayerInitializeEvent>(_onInitialize);
+    on<AudioPlayerRecoverFromErrorEvent>(_onRecoverFromError);
     // playlist event
     on<AudioPlayerLoadPlaylistEvent>(_onLoadPlaylist);
     on<AudioPlayerAddSongEvent>(_onPlaylistAdded);
@@ -218,6 +220,14 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   ) async {
     emit(AudioPlayerLoading());
     try {
+      // Check if player is already initialized and working
+      if (_player.processingState != ProcessingState.idle &&
+          _isPlayerInitialized) {
+        log.d('Player already initialized, just emitting current state');
+        await _emitStateFromPlayer(emit);
+        return;
+      }
+
       final savedState = await PlayerPersistenceService.loadPlayerState();
       if (savedState != null && savedState.songs.isNotEmpty) {
         final audioSources = await Future.wait(
@@ -227,6 +237,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         if (audioSources.isEmpty) {
           log.w('No valid audio sources from saved state, initializing empty.');
           await _emitStateFromPlayer(emit);
+          _isPlayerInitialized = true;
           return;
         }
 
@@ -261,14 +272,17 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         }
 
         await _emitStateFromPlayer(emit);
+        _isPlayerInitialized = true;
         log.d(
           'Player initialized and playlist restored. Index: $actualCurrentIndex, Song: ${currentSong?.title}',
         );
       } else {
         await _emitStateFromPlayer(emit);
+        _isPlayerInitialized = true;
         log.w('Player initialized. No saved playlist or playlist was empty.');
       }
     } catch (e, stackTrace) {
+      _isPlayerInitialized = false;
       log.e(
         'Error initializing player: ${e.toString()}',
         stackTrace: stackTrace,
@@ -283,15 +297,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   ) async {
     emit(AudioPlayerLoading());
     try {
-      final audioSources =
-          event.songs
-              .map(
-                (song) => AudioSource.uri(
-                  Uri.parse(song.path),
-                  tag: song.toMediaItem(),
-                ),
-              ) // Use song.path
-              .toList();
+      final audioSources = await Future.wait(
+        event.songs.map((song) => song.toAudioSource()).toList(),
+      );
 
       if (audioSources.isEmpty) {
         log.w('Cannot load an empty playlist.');
@@ -310,6 +318,11 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
 
       final initialIndex =
           event.initialIndex < audioSources.length ? event.initialIndex : 0;
+
+      // Stop current playback before setting new sources to avoid conflicts
+      if (_player.playing) {
+        await _player.pause();
+      }
 
       await _player.setAudioSources(
         audioSources,
@@ -520,10 +533,16 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     if (currentState is AudioPlayerReady) {
       try {
         if (_player.sequence.isEmpty) {
-          emit(
-            AudioPlayerError('No songs in playlist. Please add a song first.'),
-          );
-          return;
+          final song = event.song;
+          if (song != null) {
+            if (event.clearPlaylist) {
+              await _player.clearAudioSources();
+            }
+            await _player.setAudioSource(await song.toAudioSource());
+          } else {
+            emit(AudioPlayerError('No song to play'));
+            return;
+          }
         }
 
         if (_player.audioSource == null && _player.sequence.isNotEmpty) {
@@ -655,6 +674,41 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     } else {
       _sleepTimerInstance?.cancel();
       _sleepTimerInstance = null;
+    }
+  }
+
+  Future<void> _onRecoverFromError(
+    AudioPlayerRecoverFromErrorEvent event,
+    Emitter<AudioPlayerState> emit,
+  ) async {
+    try {
+      log.i('Attempting error recovery without full reinitialization');
+
+      // Check if the player is in a valid state for recovery
+      if (_player.processingState == ProcessingState.idle) {
+        log.w(
+          'Player is idle, cannot recover - user should retry initialization',
+        );
+        emit(
+          AudioPlayerError(
+            'Player needs reinitialization. Please restart the app or try again later.',
+          ),
+        );
+        return;
+      }
+
+      // Simply try to emit the current state from the player
+      // This avoids reinitializing the background service
+      await _emitStateFromPlayer(emit);
+
+      log.i('Error recovery successful');
+    } catch (e, stackTrace) {
+      log.e('Error during recovery: ${e.toString()}', stackTrace: stackTrace);
+      emit(
+        AudioPlayerError(
+          'Recovery failed: ${e.toString()}. Please restart the app.',
+        ),
+      );
     }
   }
 

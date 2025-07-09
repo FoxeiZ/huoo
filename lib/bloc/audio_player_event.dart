@@ -170,7 +170,12 @@ class AudioPlayerLoadPlaylistEvent extends AudioPlayerEvent {
 }
 
 // ---------- Player Control Events ---------- //
-class AudioPlayerPlayEvent extends AudioPlayerEvent {}
+class AudioPlayerPlayEvent extends AudioPlayerEvent {
+  final Song? song;
+  final bool clearPlaylist;
+
+  const AudioPlayerPlayEvent({this.song, this.clearPlaylist = true});
+}
 
 class AudioPlayerPauseEvent extends AudioPlayerEvent {}
 
@@ -206,4 +211,11 @@ class AudioPlayerSleepTimerEvent extends AudioPlayerEvent {
 
   @override
   List<Object?> get props => [isActive, duration, onTimerEnd];
+}
+
+class AudioPlayerRecoverFromErrorEvent extends AudioPlayerEvent {
+  const AudioPlayerRecoverFromErrorEvent();
+
+  @override
+  List<Object> get props => [];
 }

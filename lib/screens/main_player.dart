@@ -257,6 +257,17 @@ class _SeekBarSection extends StatelessWidget {
             },
           );
         }
+
+        // Show disabled seek bar in error state
+        if (state is AudioPlayerError) {
+          return SeekBar(
+            position: Duration.zero,
+            duration: const Duration(minutes: 3), // Default duration
+            bufferedPosition: Duration.zero,
+            onChangeEnd: null, // Disabled
+          );
+        }
+
         return const SizedBox.shrink();
       },
     );
@@ -277,6 +288,7 @@ class _PlayControlsSection extends StatelessWidget {
         return true;
       },
       builder: (context, state) {
+        // Show controls for both Ready and Error states
         if (state is AudioPlayerReady) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -359,6 +371,51 @@ class _PlayControlsSection extends StatelessWidget {
             ],
           );
         }
+
+        // Show basic controls even in error state to allow retry
+        if (state is AudioPlayerError) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous),
+                iconSize: 32,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(12),
+                onPressed: null, // Disabled in error state
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.refresh,
+                    size: 32,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    // Try to recover from error without full reinitialization
+                    context.read<AudioPlayerBloc>().add(
+                      const AudioPlayerRecoverFromErrorEvent(),
+                    );
+                    log.i("Attempting error recovery");
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.skip_next),
+                iconSize: 32,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(12),
+                onPressed: null, // Disabled in error state
+              ),
+            ],
+          );
+        }
+
         return const SizedBox.shrink();
       },
     );
@@ -370,54 +427,47 @@ class _PlayerControlsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AudioPlayerBloc, AudioPlayerState>(
-      buildWhen: (previous, current) {
-        // rebuild when in different type of state or loading/error states
-        return current is AudioPlayerLoading ||
-            current is AudioPlayerError ||
-            current.runtimeType != previous.runtimeType;
-      },
-      builder: (context, state) {
-        if (state is AudioPlayerReady) {
-          return Column(
-            children: [
-              _SeekBarSection(),
-              const SizedBox(height: 16),
-
-              _PlayControlsSection(),
-              const SizedBox(height: 16),
-            ],
-          );
-        }
-
-        if (state is AudioPlayerLoading) {
-          return const Column(
-            children: [
-              SizedBox(height: 50),
-              Center(child: CircularProgressIndicator()),
-              SizedBox(height: 50),
-            ],
-          );
-        }
-
+    return BlocListener<AudioPlayerBloc, AudioPlayerState>(
+      listener: (context, state) {
+        // Show error via snackbar instead of replacing UI
         if (state is AudioPlayerError) {
-          return Column(
-            children: [
-              const SizedBox(height: 50),
-              Center(
-                child: Text(
-                  "Error: ${state.message}",
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 50),
-            ],
-          );
+          _showSnackBar(context, "Player Error: ${state.message}");
         }
-
-        return const SizedBox.shrink();
       },
+      child: BlocBuilder<AudioPlayerBloc, AudioPlayerState>(
+        buildWhen: (previous, current) {
+          // rebuild when in different type of state or loading states (but not error)
+          return current is AudioPlayerLoading ||
+              (current is AudioPlayerReady && previous is! AudioPlayerReady) ||
+              current.runtimeType != previous.runtimeType;
+        },
+        builder: (context, state) {
+          // Show controls for both Ready and Error states
+          if (state is AudioPlayerReady || state is AudioPlayerError) {
+            return Column(
+              children: [
+                _SeekBarSection(),
+                const SizedBox(height: 16),
+
+                _PlayControlsSection(),
+                const SizedBox(height: 16),
+              ],
+            );
+          }
+
+          if (state is AudioPlayerLoading) {
+            return const Column(
+              children: [
+                SizedBox(height: 50),
+                Center(child: CircularProgressIndicator()),
+                SizedBox(height: 50),
+              ],
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 }
@@ -598,11 +648,12 @@ class _MainPlayerState extends State<MainPlayer> {
   }
 
   void _showBottomSheet(BuildContext context) {
-    var isLocal =
-        (context.read<AudioPlayerBloc>().state as AudioPlayerReady)
-            .songMetadata
-            ?.source ==
-        AudioSourceEnum.local;
+    final currentState = context.read<AudioPlayerBloc>().state;
+    var isLocal = false;
+
+    if (currentState is AudioPlayerReady && currentState.songMetadata != null) {
+      isLocal = currentState.songMetadata!.source == AudioSourceEnum.local;
+    }
 
     showModalBottomSheet(
       enableDrag: false,

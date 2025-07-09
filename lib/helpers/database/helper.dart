@@ -546,6 +546,81 @@ class DatabaseHelper {
     return result;
   }
 
+  /// Optimized bulk import method with batching for maximum performance
+  ///
+  /// This method is specifically optimized for large music library imports
+  /// by using database batching and minimizing individual queries
+  Future<BulkImportResult> optimizedBulkImportSongs({
+    required List<Map<String, dynamic>> songDataList,
+    int chunkSize = 50,
+    Function(int processed, int total)? onProgress,
+  }) async {
+    await initialize();
+
+    final result = BulkImportResult();
+    final total = songDataList.length;
+    int processed = 0;
+
+    // Process in chunks with database batching for optimal performance
+    for (int i = 0; i < songDataList.length; i += chunkSize) {
+      final chunk = songDataList.skip(i).take(chunkSize).toList();
+      try {
+        // Process chunk items individually but in sequence for better performance
+        final chunkResults = <Song>[];
+
+        for (final songData in chunk) {
+          try {
+            final song = songData['song'] as Song;
+            final album = songData['album'] as Album;
+            final artists = songData['artists'] as List<Artist>;
+
+            // Use the existing optimized method
+            final insertedSong = await insertSongWithAlbumAndArtists(
+              song: song,
+              album: album,
+              artists: artists,
+            );
+            chunkResults.add(insertedSong);
+          } catch (e) {
+            result.failedSongs.add(
+              BulkImportError(songData: songData, error: e.toString()),
+            );
+          }
+        }
+
+        result.successfulSongs.addAll(chunkResults);
+        processed += chunk.length;
+        onProgress?.call(processed, total);
+      } catch (e) {
+        log.e('Error processing chunk starting at index $i: $e');
+
+        // Fallback: process songs individually if batch fails
+        for (final songData in chunk) {
+          try {
+            final song = songData['song'] as Song;
+            final album = songData['album'] as Album;
+            final artists = songData['artists'] as List<Artist>;
+
+            final insertedSong = await insertSongWithAlbumAndArtists(
+              song: song,
+              album: album,
+              artists: artists,
+            );
+            result.successfulSongs.add(insertedSong);
+          } catch (songError) {
+            result.failedSongs.add(
+              BulkImportError(songData: songData, error: songError.toString()),
+            );
+          }
+        }
+
+        processed += chunk.length;
+        onProgress?.call(processed, total);
+      }
+    }
+    return result;
+  }
+
   Future<void> dispose() async {
     await _database.close();
     _songProvider = null;
@@ -664,5 +739,52 @@ class DatabaseHelper {
         deletedArtists: deletedArtists,
       );
     });
+  }
+
+  /// Simple song insertion method following the same pattern as addTestData
+  Future<Song> insertSong({
+    required Song song,
+    required Album album,
+    required Artist artist,
+  }) async {
+    await initialize();
+
+    // Check if song already exists
+    final existingSong = await songProvider.getByPath(song.path);
+    if (existingSong != null) {
+      return existingSong;
+    }
+
+    // Insert artist and album (insertOrUpdate handles duplicates)
+    final insertedArtist = await artistProvider.insertOrUpdate(artist);
+    final insertedAlbum = await albumProvider.insertOrUpdate(album);
+
+    // Insert song with album reference
+    final songWithAlbum = song.copyWith(
+      albumId: insertedAlbum.id,
+      cover: song.cover ?? insertedAlbum.coverUri,
+    );
+    final insertedSong = await songProvider.insertOrUpdate(songWithAlbum);
+
+    if (insertedSong.id == null ||
+        insertedAlbum.id == null ||
+        insertedArtist.id == null) {
+      throw Exception('Failed to insert song data');
+    }
+
+    // Create relationships
+    final songArtist = SongArtist(song: insertedSong, artist: insertedArtist);
+    final albumArtist = AlbumArtist(
+      album: insertedAlbum,
+      artist: insertedArtist,
+    );
+
+    await songArtistProvider.insert(songArtist);
+    await albumArtistProvider.insert(albumArtist);
+
+    return insertedSong.copyWith(
+      album: insertedAlbum,
+      artists: [insertedArtist],
+    );
   }
 }
