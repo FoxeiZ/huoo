@@ -76,7 +76,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _checkSetupStatus() async {
     try {
       final shouldShow = await SetupWizardManager.shouldShowSetupWizard();
-      
+
       if (mounted) {
         setState(() {
           _shouldShowSetup = shouldShow;
@@ -85,7 +85,7 @@ class _AppInitializerState extends State<AppInitializer> {
       }
     } catch (e) {
       log.e('Error checking setup status: $e');
-      
+
       if (mounted) {
         setState(() {
           _shouldShowSetup = true; // Default to showing setup on error
@@ -127,9 +127,7 @@ class _AppInitializerState extends State<AppInitializer> {
                 ),
               ),
               const SizedBox(height: 12),
-              const CircularProgressIndicator(
-                color: Colors.deepPurple,
-              ),
+              const CircularProgressIndicator(color: Colors.deepPurple),
             ],
           ),
         ),

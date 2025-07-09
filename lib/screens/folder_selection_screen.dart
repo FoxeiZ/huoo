@@ -838,10 +838,10 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  
+
                   // Mark setup as skipped but completed
                   await SetupWizardManager.skipSetup();
-                  
+
                   _navigateToMainApp();
                 },
                 child: const Text('Continue'),
@@ -857,7 +857,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       await SetupWizardManager.markStepCompleted(SetupStep.folders);
       await SetupWizardManager.markSetupCompleted();
     }
-    
+
     // Navigate to main app using your friend's beautiful HomeScreen
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
