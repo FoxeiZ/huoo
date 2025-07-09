@@ -338,11 +338,9 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       final initialIndex =
           event.initialIndex < audioSources.length ? event.initialIndex : 0;
 
-      // Stop current playback before setting new sources to avoid conflicts
       if (_player.playing) {
         await _player.pause();
       }
-
       await _player.setAudioSources(
         audioSources,
         initialIndex: initialIndex,
@@ -360,14 +358,13 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       }
 
       await _emitStateFromPlayer(emit);
+      add(AudioPlayerPlayEvent());
       log.d(
         'New playlist loaded. Index: ${_player.currentIndex}, Song: ${currentSong?.title}',
       );
 
-      // Save using lightweight references
       final songReferences =
           event.songs.map((song) => SongReference.fromSong(song)).toList();
-
       PlayerPersistenceService.savePlayerState(
         songReferences: songReferences,
         currentIndex: _player.currentIndex,
@@ -398,18 +395,18 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     Emitter<AudioPlayerState> emit,
   ) async {
     try {
-      if (state is AudioPlayerReady) {
+      final currentState = state;
+      if (currentState is AudioPlayerReady) {
         if (_player.sequenceState.sequence.isEmpty) {
           await _player.setAudioSource(await event.song.toAudioSource());
           await _player.playerStateStream.firstWhere(
             (ps) => ps.processingState != ProcessingState.loading,
           );
-          log.d('First song added to empty playlist: ${event.song.title}');
+          log.w('First song added to empty playlist: ${event.song.title}');
         } else {
           await _player.addAudioSource(await event.song.toAudioSource());
-          log.d('Song added to existing playlist: ${event.song.title}');
+          log.w('Song added to existing playlist: ${event.song.title}');
         }
-        await _emitStateFromPlayer(emit);
       }
     } catch (e, stackTrace) {
       log.e('Error adding song: ${e.toString()}', stackTrace: stackTrace);

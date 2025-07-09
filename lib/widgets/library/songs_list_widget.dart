@@ -159,19 +159,16 @@ class _SongsListWidgetState extends State<SongsListWidget> {
   }
 
   void _playSong(Song song) {
-    final bloc = context.read<AudioPlayerBloc>();
-
-    bloc.add(AudioPlayerClearPlaylistEvent());
-    bloc.add(AudioPlayerPlayEvent(song: song, clearPlaylist: true));
-
+    context.read<AudioPlayerBloc>().add(
+      AudioPlayerLoadPlaylistEvent([song], autoPlay: true),
+    );
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
   }
 
   void _addToQueue(Song song) {
-    final bloc = context.read<AudioPlayerBloc>();
-    bloc.add(AudioPlayerAddSongEvent(song));
+    context.read<AudioPlayerBloc>().add(AudioPlayerAddSongEvent(song));
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

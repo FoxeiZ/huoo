@@ -5,6 +5,7 @@ import 'package:huoo/models/song.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/screens/main_player.dart';
+import 'package:huoo/widgets/common/song_tile.dart';
 
 class ArtistsListWidget extends StatefulWidget {
   const ArtistsListWidget({super.key});
@@ -290,74 +291,14 @@ class _ArtistsListWidgetState extends State<ArtistsListWidget> {
                           itemCount: songs.length,
                           itemBuilder: (context, index) {
                             final song = songs[index];
-                            return ListTile(
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF1DB954,
-                                  ).withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child:
-                                    song.cover != null && song.cover!.isNotEmpty
-                                        ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          child: Image.asset(
-                                            song.cover!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              return const Icon(
-                                                Icons.music_note,
-                                                color: Color(0xFF1DB954),
-                                                size: 20,
-                                              );
-                                            },
-                                          ),
-                                        )
-                                        : const Icon(
-                                          Icons.music_note,
-                                          color: Color(0xFF1DB954),
-                                          size: 20,
-                                        ),
-                              ),
-                              title: Text(
-                                song.title,
-                                style: const TextStyle(color: Colors.white),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle:
-                                  song.album != null
-                                      ? Text(
-                                        song.album!.title,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                      : null,
-                              trailing: IconButton(
-                                icon: const Icon(
-                                  Icons.more_vert,
-                                  color: Colors.white54,
-                                ),
-                                onPressed: () {
-                                  // TODO: Show song options
-                                },
-                              ),
+                            return SongTile(
+                              song: song,
                               onTap: () {
                                 Navigator.pop(context);
-                                _playSong(song);
+                                _playAllSongs(songs, index);
                               },
+                              onMorePressed: () => _showSongOptions(song),
+                              formatDuration: _formatDuration,
                             );
                           },
                         ),
@@ -444,22 +385,139 @@ class _ArtistsListWidgetState extends State<ArtistsListWidget> {
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
   }
 
-  void _playAllSongs(List<Song> songs) {
+  void _playAllSongs(List<Song> songs, [int startIndex = 0]) {
     if (songs.isEmpty) return;
 
-    // Clear playlist and add all songs
-    context.read<AudioPlayerBloc>().add(AudioPlayerClearPlaylistEvent());
-
-    for (final song in songs) {
-      context.read<AudioPlayerBloc>().add(AudioPlayerAddSongEvent(song));
-    }
-
+    context.read<AudioPlayerBloc>().add(
+      AudioPlayerLoadPlaylistEvent(songs, initialIndex: startIndex),
+    );
     context.read<AudioPlayerBloc>().add(AudioPlayerPlayEvent());
-
     // Navigate to main player
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showSongOptions(Song song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2A2A2A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.play_arrow, color: Colors.white),
+                  title: const Text(
+                    'Play',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _playSong(song);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.queue_music, color: Colors.white),
+                  title: const Text(
+                    'Add to Queue',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addToQueue(song);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.playlist_add, color: Colors.white),
+                  title: const Text(
+                    'Add to Playlist',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Add to playlist
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info, color: Colors.white),
+                  title: const Text(
+                    'Song Info',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSongInfo(song);
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _addToQueue(Song song) {
+    final bloc = context.read<AudioPlayerBloc>();
+    bloc.add(AudioPlayerAddSongEvent(song));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added "${song.title}" to queue'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF1DB954),
+      ),
+    );
+  }
+
+  void _showSongInfo(Song song) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF2A2A2A),
+            title: const Text(
+              'Song Information',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow('Title', song.title),
+                _buildInfoRow(
+                  'Artist',
+                  song.artist.isNotEmpty ? song.artist : 'Unknown',
+                ),
+                _buildInfoRow('Duration', _formatDuration(song.duration)),
+                if (song.album != null)
+                  _buildInfoRow('Album', song.album!.title),
+                if (song.year != null)
+                  _buildInfoRow('Year', song.year.toString()),
+                _buildInfoRow('Track', '${song.trackNumber}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Color(0xFF1DB954)),
+                ),
+              ),
+            ],
+          ),
+    );
   }
 
   void _shufflePlaySongs(List<Song> songs) {

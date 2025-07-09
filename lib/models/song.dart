@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:image/image.dart';
+import 'package:logger/logger.dart';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart'
     as audio_metadata;
@@ -19,6 +20,12 @@ import 'package:sqflite/sqflite.dart';
 import 'package:huoo/base/db/provider.dart';
 import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/album.dart';
+
+final log = Logger(
+  filter: ProductionFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
 
 enum AudioSourceEnum { local, api }
 
@@ -117,9 +124,32 @@ class Song extends Equatable {
     required AudioSourceEnum source,
     required audio_metadata.AudioMetadata metadata,
   }) async {
+    // Start with performers
     final artists =
-        metadata.performers.map((name) => Artist(name: name)).toList();
-    artists.insert(0, Artist(name: metadata.artist ?? 'Unknown Artist'));
+        metadata.performers.map((name) => Artist(name: name.trim())).toList();
+
+    // Split main artist by comma and add each as separate artist
+    final mainArtistString = metadata.artist ?? 'Unknown Artist';
+    final mainArtists =
+        mainArtistString
+            .split(',')
+            .map((name) => name.trim())
+            .where((name) => name.isNotEmpty)
+            .map((name) => Artist(name: name))
+            .toList();
+
+    // Add main artists at the beginning, avoiding duplicates
+    for (final mainArtist in mainArtists.reversed) {
+      if (!artists.any((artist) => artist.name == mainArtist.name)) {
+        artists.insert(0, mainArtist);
+      }
+    }
+
+    // If no artists found, add unknown artist
+    if (artists.isEmpty) {
+      artists.add(Artist(name: 'Unknown Artist'));
+    }
+
     return Song(
       path: path,
       source: source,
@@ -204,8 +234,9 @@ class Song extends Equatable {
     );
     String? coverPath = await _getOrSaveCoverPath(metadata);
 
+    // Return song with cover and artists - the caller should use saveWithArtists()
+    // to persist the artist relationships to the database
     return song.copyWith(cover: coverPath);
-    // await songProvider.insertOrUpdate(savedSong);
   }
 
   static Future<Song> fromAsset(String assetPath) async {

@@ -162,11 +162,16 @@ class AudioPlayerInitializeEvent extends AudioPlayerEvent {
 class AudioPlayerLoadPlaylistEvent extends AudioPlayerEvent {
   final List<Song> songs;
   final int initialIndex;
+  final bool autoPlay;
 
-  const AudioPlayerLoadPlaylistEvent(this.songs, {this.initialIndex = 0});
+  const AudioPlayerLoadPlaylistEvent(
+    this.songs, {
+    this.initialIndex = 0,
+    this.autoPlay = false,
+  });
 
   @override
-  List<Object> get props => [songs, initialIndex];
+  List<Object> get props => [songs, initialIndex, autoPlay];
 }
 
 // ---------- Player Control Events ---------- //
