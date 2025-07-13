@@ -23,9 +23,7 @@ abstract class DatabaseOperation {
   ]);
   Future<int> count(String table);
   Future<void> insertAll(String table, List<Map<String, Object?>> values);
-  Future<void> close() async {
-    // Default implementation does nothing, can be overridden
-  }
+  Future<void> close() async {}
 }
 
 class DatabaseWrapper implements DatabaseOperation {

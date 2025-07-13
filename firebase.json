@@ -1,0 +1,22 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "huooapi",
+                    "appId": "1:887247541834:android:3e7f0e57249925e3c8f8b3",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "huooapi",
+                    "configurations": {
+                        "android": "1:887247541834:android:3e7f0e57249925e3c8f8b3",
+                        "windows": "1:887247541834:web:bb6083068a35a90cc8f8b3"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -124,7 +124,6 @@ class Song extends Equatable {
     required AudioSourceEnum source,
     required audio_metadata.AudioMetadata metadata,
   }) async {
-    // Start with performers
     final artists =
         metadata.performers.map((name) => Artist(name: name.trim())).toList();
 
@@ -733,7 +732,6 @@ class SongProvider extends BaseProvider<Song> {
   }
 
   Future<Song?> getSongWithDetails(int songId) async {
-    // Get song with album data in one query
     final songMaps = await db.rawQuery(
       '''
       SELECT 
@@ -1015,51 +1013,4 @@ class SongProvider extends BaseProvider<Song> {
 
     return results;
   }
-
-  // // Batch operations for better performance
-  // Future<List<SongWithAlbumAndArtists>> insertBatchWithDetails(
-  //   List<Song> songs,
-  //   List<Album> albums,
-  //   List<Artist> artists,
-  //   List<Map<String, int>> relationships,
-  // ) async {
-  //   return await db.transaction((txn) async {
-  //     final songProvider = SongProvider(txn);
-  //     final albumProvider = AlbumProvider(txn);
-  //     final artistProvider = ArtistProvider(txn);
-  //     final songArtistProvider = SongArtistProvider(txn);
-
-  //     // Insert all entities
-  //     final insertedSongs = await Future.wait(
-  //       songs.map((song) => songProvider.insert(song)),
-  //     );
-  //     final insertedAlbums = await Future.wait(
-  //       albums.map((album) => albumProvider.insert(album)),
-  //     );
-  //     final insertedArtists = await Future.wait(
-  //       artists.map((artist) => artistProvider.insert(artist)),
-  //     );
-
-  //     // Insert relationships
-  //     for (final relationship in relationships) {
-  //       final songId = relationship['songId'];
-  //       final artistId = relationship['artistId'];
-  //       if (songId != null && artistId != null) {
-  //         await songArtistProvider.insert(
-  //           SongArtist(
-  //             song: insertedSongs.firstWhere((s) => s.id == songId),
-  //             artist: insertedArtists.firstWhere((a) => a.id == artistId),
-  //           ),
-  //         );
-  //       }
-  //     }
-
-  //     // Return combined results
-  //     return Future.wait(
-  //       insertedSongs.map((song) => getSongWithDetails(song.id!)),
-  //     ).then(
-  //       (results) => results.whereType<SongWithAlbumAndArtists>().toList(),
-  //     );
-  //   });
-  // }
 }

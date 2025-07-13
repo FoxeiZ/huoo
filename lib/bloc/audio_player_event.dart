@@ -7,6 +7,74 @@ sealed class AudioPlayerEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+// Generic event
+class AudioPlayerGenericEvent extends AudioPlayerEvent {
+  final AudioSource? source;
+  final List<IndexedAudioSource>? playlist;
+  final int? currentIndex;
+  final Song? songMetadata;
+  final bool? loading;
+  final bool? playing;
+  final ProcessingState? processingState;
+  final Duration? position;
+  final Duration? duration;
+  final Duration? bufferedPosition;
+  final LoopMode? loopMode;
+  final bool? shuffleModeEnabled;
+  final double? volume;
+  final double? speed;
+  final double? pitch;
+  final int? androidAudioSessionId;
+  final bool? hasNext;
+  final bool? hasPrevious;
+  final Duration? sleepTimer;
+
+  const AudioPlayerGenericEvent({
+    this.source,
+    this.playlist,
+    this.currentIndex,
+    this.songMetadata,
+    this.loading,
+    this.playing,
+    this.processingState,
+    this.position,
+    this.duration,
+    this.bufferedPosition,
+    this.loopMode,
+    this.shuffleModeEnabled,
+    this.volume,
+    this.speed,
+    this.pitch,
+    this.androidAudioSessionId,
+    this.hasNext,
+    this.hasPrevious,
+    this.sleepTimer,
+  });
+
+  @override
+  List<Object?> get props => [
+    source,
+    playlist,
+    currentIndex,
+    songMetadata,
+    loading,
+    playing,
+    processingState,
+    position,
+    duration,
+    bufferedPosition,
+    loopMode,
+    shuffleModeEnabled,
+    volume,
+    speed,
+    pitch,
+    androidAudioSessionId,
+    hasNext,
+    hasPrevious,
+    sleepTimer,
+  ];
+}
+
 class AudioPlayerSequenceUpdateEvent extends AudioPlayerEvent {
   final int? currentIndex;
   final IndexedAudioSource? currentSource;
@@ -128,6 +196,15 @@ class AudioPlayerAddSongEvent extends AudioPlayerEvent {
 
   @override
   List<Object> get props => [song];
+}
+
+class AudioPlayerAddSongsEvent extends AudioPlayerEvent {
+  final List<Song> songs;
+
+  const AudioPlayerAddSongsEvent(this.songs);
+
+  @override
+  List<Object> get props => [songs];
 }
 
 class AudioPlayerRemoveSongEvent extends AudioPlayerEvent {

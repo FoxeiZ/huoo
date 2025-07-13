@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:huoo/models/song.dart';
-import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/screens/main_player.dart';
+import 'package:huoo/services/songs_cache.dart';
+import 'package:huoo/widgets/common/cache_status_widget.dart';
 import 'package:huoo/widgets/common/song_tile.dart';
 
 class SongsListWidget extends StatefulWidget {
@@ -17,6 +18,7 @@ class _SongsListWidgetState extends State<SongsListWidget> {
   List<Song> _songs = [];
   bool _isLoading = true;
   String _error = '';
+  final SongsCache _songsCache = SongsCache();
 
   @override
   void initState() {
@@ -24,15 +26,14 @@ class _SongsListWidgetState extends State<SongsListWidget> {
     _loadSongs();
   }
 
-  Future<void> _loadSongs() async {
+  Future<void> _loadSongs({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoading = true;
         _error = '';
       });
 
-      final songs =
-          await DatabaseHelper().songProvider.getAllSongsWithDetails();
+      final songs = await _songsCache.getSongs(forceRefresh: forceRefresh);
 
       if (mounted) {
         setState(() {
@@ -69,9 +70,9 @@ class _SongsListWidgetState extends State<SongsListWidget> {
               color: Colors.red.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error Loading Songs',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -88,7 +89,7 @@ class _SongsListWidgetState extends State<SongsListWidget> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _loadSongs,
+              onPressed: () => _loadSongs(forceRefresh: true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1DB954),
                 foregroundColor: Colors.white,
@@ -134,28 +135,28 @@ class _SongsListWidgetState extends State<SongsListWidget> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadSongs,
+      onRefresh: () => _loadSongs(forceRefresh: true),
       color: const Color(0xFF1DB954),
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _songs.length,
-        itemBuilder: (context, index) {
-          final song = _songs[index];
-          return SongTile(
-            song: song,
-            onTap: () => _playSong(song),
-            onMorePressed: () => _showSongOptions(song),
-            formatDuration: _formatDuration,
-          );
-        },
+      child: Column(
+        children: [
+          CacheStatusWidget(onRefresh: () => _loadSongs(forceRefresh: true)),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _songs.length,
+              itemBuilder: (context, index) {
+                final song = _songs[index];
+                return SongTile(
+                  song: song,
+                  onTap: () => _playSong(song),
+                  onMorePressed: () => _showSongOptions(song),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   void _playSong(Song song) {
@@ -260,7 +261,7 @@ class _SongsListWidgetState extends State<SongsListWidget> {
                   'Artist',
                   song.artist.isNotEmpty ? song.artist : 'Unknown',
                 ),
-                _buildInfoRow('Duration', _formatDuration(song.duration)),
+                _buildInfoRow('Duration', song.displayDuration),
                 _buildInfoRow('Path', song.path),
                 _buildInfoRow('Source', song.source.toString()),
                 _buildInfoRow(

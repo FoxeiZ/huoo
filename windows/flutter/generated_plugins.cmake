@@ -3,6 +3,8 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  firebase_auth
+  firebase_core
   media_kit_libs_windows_audio
   permission_handler_windows
 )
