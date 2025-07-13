@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:huoo/bloc/auth_bloc.dart';
 import 'package:huoo/screens/folder_selection_screen.dart';
+import 'package:huoo/screens/profile_screen.dart';
+import 'package:huoo/services/auth_service.dart';
 import 'package:huoo/services/setup_wizard_manager.dart';
 
 enum AppPermissionStatus { granted, denied, checking }
@@ -61,6 +65,26 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       appBar: AppBar(
         title: const Text('Setup Permissions'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle),
+            tooltip: 'Profile',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder:
+                      (context) => BlocProvider(
+                        create:
+                            (context) =>
+                                AuthBloc(authService: AuthService())
+                                  ..add(AppStarted()),
+                        child: const ProfileScreen(),
+                      ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

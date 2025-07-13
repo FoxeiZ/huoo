@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "887247541834",
+    "project_id": "huooapi",
+    "storage_bucket": "huooapi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:887247541834:android:3e7f0e57249925e3c8f8b3",
+        "android_client_info": {
+          "package_name": "com.example.huoo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "887247541834-tgg6ocuj69uffkq2gh58a30tr2hsohm0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeURS6m6FSsGHUxawGdPtnCD-ISgOXHCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "887247541834-tgg6ocuj69uffkq2gh58a30tr2hsohm0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "887247541834-g1rcfq6r9u0tssv9t75tik9irc9n848j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.huoo"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:887247541834:android:46066efcb2649426c8f8b3",
+        "android_client_info": {
+          "package_name": "github.foxeiz.huoo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "887247541834-tgg6ocuj69uffkq2gh58a30tr2hsohm0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeURS6m6FSsGHUxawGdPtnCD-ISgOXHCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "887247541834-tgg6ocuj69uffkq2gh58a30tr2hsohm0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "887247541834-g1rcfq6r9u0tssv9t75tik9irc9n848j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.huoo"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

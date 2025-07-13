@@ -507,7 +507,6 @@ class DatabaseHelper {
     final total = songDataList.length;
     int processed = 0;
 
-    // Process in chunks to avoid memory issues
     for (int i = 0; i < songDataList.length; i += chunkSize) {
       final chunk = songDataList.skip(i).take(chunkSize).toList();
 
@@ -518,7 +517,6 @@ class DatabaseHelper {
 
         onProgress?.call(processed, total);
       } catch (e) {
-        // Handle individual song failures
         for (final songData in chunk) {
           try {
             final song = songData['song'] as Song;
@@ -561,11 +559,9 @@ class DatabaseHelper {
     final total = songDataList.length;
     int processed = 0;
 
-    // Process in chunks with database batching for optimal performance
     for (int i = 0; i < songDataList.length; i += chunkSize) {
       final chunk = songDataList.skip(i).take(chunkSize).toList();
       try {
-        // Process chunk items individually but in sequence for better performance
         final chunkResults = <Song>[];
 
         for (final songData in chunk) {
@@ -574,7 +570,6 @@ class DatabaseHelper {
             final album = songData['album'] as Album;
             final artists = songData['artists'] as List<Artist>;
 
-            // Use the existing optimized method
             final insertedSong = await insertSongWithAlbumAndArtists(
               song: song,
               album: album,
@@ -690,7 +685,6 @@ class DatabaseHelper {
       int deletedAlbums = 0;
       int deletedArtists = 0;
 
-      // Find albums with no songs
       final orphanedAlbums = await txn.rawQuery('''
         SELECT a.${AlbumColumns.id} 
         FROM ${AlbumColumns.table} a 

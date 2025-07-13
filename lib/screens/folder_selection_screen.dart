@@ -334,25 +334,6 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Continue Later button - only show when not from settings
-                    if (!widget.isFromSettings) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton.icon(
-                          onPressed: _isScanning ? null : _skipSetup,
-                          icon: const Icon(Icons.skip_next),
-                          label: const Text('Continue Later'),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Done button - only show when from settings and scan is complete
                     if (widget.isFromSettings && _lastResult != null) ...[
                       SizedBox(
                         width: double.infinity,
@@ -369,7 +350,6 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                       ),
                     ],
 
-                    // Progress section - make it more compact and scrollable if needed
                     if (_isScanning || _lastResult != null) ...[
                       const SizedBox(height: 16),
                       Expanded(
@@ -396,7 +376,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                                             _isScanning
                                                 ? Colors.blue
                                                 : Colors.green,
-                                        size: 20, // Smaller icon
+                                        size: 20,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(

@@ -40,6 +40,29 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       var song = await DatabaseHelper().songProvider.getById(1);
       add(AudioPlayerAddSongEvent(song!));
     });
+    on<AudioPlayerGenericEvent>((event, emit) async {
+      await _emitStateFromPlayer(
+        emit,
+        source: event.source,
+        playlist: event.playlist,
+        currentIndex: event.currentIndex,
+        songMetadata: event.songMetadata,
+        loading: event.loading,
+        playing: event.playing,
+        processingState: event.processingState,
+        duration: event.duration,
+        position: event.position,
+        bufferedPosition: event.bufferedPosition,
+        loopMode: event.loopMode,
+        shuffleModeEnabled: event.shuffleModeEnabled,
+        volume: event.volume,
+        speed: event.speed,
+        pitch: event.pitch,
+        androidAudioSessionId: event.androidAudioSessionId,
+        hasNext: event.hasNext,
+        hasPrevious: event.hasPrevious,
+      );
+    });
     on<AudioPlayerInitializeEvent>(_onInitialize);
     on<AudioPlayerRecoverFromErrorEvent>(_onRecoverFromError);
     // playlist event
@@ -74,7 +97,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   }
 
   Future<void> _initSubscriptions() async {
-    // AudioPlayerStateEvent
     _playerStateSubscription = _player.playerStateStream.listen((
       playerState,
     ) async {
@@ -90,7 +112,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
       if (state is AudioPlayerReady) {
         final currentReadyState = state as AudioPlayerReady;
         if (currentReadyState.playlist.isNotEmpty) {
-          // Extract lightweight song references from audio sources
           final songReferences = PlayerPersistenceService.extractSongReferences(
             currentReadyState.playlist,
           );
@@ -146,6 +167,14 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
 
     _pitchSubscription = _player.pitchStream.listen((pitch) {
       add(AudioPlayerPitchEvent(pitch));
+    });
+
+    _currentIndexSubscription = _player.currentIndexStream.listen((
+      currentIndex,
+    ) {
+      if (currentIndex != null && state is AudioPlayerReady) {
+        add(AudioPlayerGenericEvent());
+      }
     });
 
     _sequenceStateSubscription = _player.sequenceStateStream.listen((
@@ -223,7 +252,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
   ) async {
     emit(AudioPlayerLoading());
     try {
-      // Check if player is already initialized and working
       if (_player.processingState != ProcessingState.idle &&
           _isPlayerInitialized) {
         log.d('Player already initialized, just emitting current state');
@@ -233,7 +261,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
 
       final savedState = await PlayerPersistenceService.loadPlayerState();
       if (savedState != null && savedState.songReferences.isNotEmpty) {
-        // Reconstruct full Song objects from lightweight references
         final songs = await PlayerPersistenceService.reconstructSongs(
           savedState.songReferences,
         );
@@ -683,31 +710,39 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     AudioPlayerSequenceUpdateEvent event,
     Emitter<AudioPlayerState> emit,
   ) async {
-    final currentState = state;
-    if (currentState is AudioPlayerReady) {
-      final currentPlaylist = event.sequence;
-      if (currentPlaylist.isEmpty) {
-        log.w('Received empty playlist in sequence update');
+    try {
+      final currentState = state;
+      if (currentState is AudioPlayerReady) {
+        final currentPlaylist = event.sequence;
+        if (currentPlaylist.isEmpty) {
+          log.w('Received empty playlist in sequence update');
+          emit(
+            currentState.copyWith(
+              playlist: currentPlaylist,
+              source: null,
+              playing: false,
+              currentIndex: null,
+              songMetadata: null,
+              hasNext: false,
+              hasPrevious: false,
+            ),
+          );
+          return;
+        }
         emit(
           currentState.copyWith(
             playlist: currentPlaylist,
-            currentIndex: null,
-            songMetadata: null,
-            hasNext: false,
-            hasPrevious: false,
+            source: event.currentSource,
+            currentIndex: event.currentIndex,
+            hasNext: event.hasNext,
+            hasPrevious: event.hasPrevious,
           ),
         );
-        return;
       }
-      final currentCurrentIndex = event.currentIndex ?? _player.currentIndex;
-
-      emit(
-        currentState.copyWith(
-          playlist: currentPlaylist,
-          currentIndex: currentCurrentIndex,
-          hasNext: event.hasNext,
-          hasPrevious: event.hasPrevious,
-        ),
+    } catch (e, stackTrace) {
+      log.e(
+        'Error handling sequence state update: ${e.toString()}',
+        stackTrace: stackTrace,
       );
     }
   }
@@ -735,7 +770,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
     try {
       log.i('Attempting error recovery without full reinitialization');
 
-      // Check if the player is in a valid state for recovery
       if (_player.processingState == ProcessingState.idle) {
         log.w(
           'Player is idle, cannot recover - user should retry initialization',
@@ -748,8 +782,6 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         return;
       }
 
-      // Simply try to emit the current state from the player
-      // This avoids reinitializing the background service
       await _emitStateFromPlayer(emit);
 
       log.i('Error recovery successful');

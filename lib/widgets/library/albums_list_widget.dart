@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:huoo/models/album.dart';
 import 'package:huoo/models/song.dart';
-import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/screens/main_player.dart';
+import 'package:huoo/services/albums_cache.dart';
+import 'package:huoo/widgets/common/cache_status_widget.dart';
 import 'package:huoo/widgets/common/song_tile.dart';
 
 class AlbumsListWidget extends StatefulWidget {
@@ -19,6 +20,7 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
   Map<int, List<Song>> _albumSongs = {};
   bool _isLoading = true;
   String _error = '';
+  final AlbumsCache _albumsCache = AlbumsCache();
 
   @override
   void initState() {
@@ -26,24 +28,16 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
     _loadAlbums();
   }
 
-  Future<void> _loadAlbums() async {
+  Future<void> _loadAlbums({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoading = true;
         _error = '';
       });
 
-      final albums = await DatabaseHelper().albumProvider.getAll();
-      final Map<int, List<Song>> albumSongs = {};
-
-      // Get songs for each album
-      for (final album in albums) {
-        if (album.id != null) {
-          final songs = await DatabaseHelper().songProvider
-              .getSongsByAlbumWithDetails(album.id!);
-          albumSongs[album.id!] = songs;
-        }
-      }
+      final result = await _albumsCache.getAlbums(forceRefresh: forceRefresh);
+      final albums = result['albums'] as List<Album>;
+      final albumSongs = result['albumSongs'] as Map<int, List<Song>>;
 
       if (mounted) {
         setState(() {
@@ -146,22 +140,29 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAlbums,
+      onRefresh: () => _loadAlbums(forceRefresh: true),
       color: const Color(0xFF1DB954),
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.8,
-        ),
-        itemCount: _albums.length,
-        itemBuilder: (context, index) {
-          final album = _albums[index];
-          final songs = _albumSongs[album.id] ?? [];
-          return _buildAlbumCard(album, songs);
-        },
+      child: Column(
+        children: [
+          CacheStatusWidget(onRefresh: () => _loadAlbums(forceRefresh: true)),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: _albums.length,
+              itemBuilder: (context, index) {
+                final album = _albums[index];
+                final songs = _albumSongs[album.id] ?? [];
+                return _buildAlbumCard(album, songs);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -226,38 +227,45 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
               flex: 2,
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      album.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${songs.length} song${songs.length != 1 ? 's' : ''}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (album.releaseDate != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        album.releaseDate!.year.toString(),
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            album.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${songs.length} song${songs.length != 1 ? 's' : ''}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (album.releaseDate != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            album.releaseDate!.year.toString(),
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -412,8 +420,8 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
                                 Navigator.pop(context);
                                 _playAlbum(songs, index);
                               },
-                              onMorePressed: () => _showSongOptions(song),
-                              formatDuration: _formatDuration,
+                              onPlayOptionPressed: _playSong,
+                              onQueueOptionPressed: _addToQueue,
                             );
                           },
                         ),
@@ -426,92 +434,11 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
   }
 
   void _playSong(Song song) {
-    final bloc = context.read<AudioPlayerBloc>();
-
-    // Add song to the audio player bloc and start playing
-    bloc.add(AudioPlayerClearPlaylistEvent());
-    bloc.add(AudioPlayerAddSongEvent(song));
-    bloc.add(AudioPlayerPlayEvent());
-
-    // Navigate to main player
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  void _showSongOptions(Song song) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF2A2A2A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.play_arrow, color: Colors.white),
-                  title: const Text(
-                    'Play',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _playSong(song);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.queue_music, color: Colors.white),
-                  title: const Text(
-                    'Add to Queue',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _addToQueue(song);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.playlist_add, color: Colors.white),
-                  title: const Text(
-                    'Add to Playlist',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Add to playlist
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.info, color: Colors.white),
-                  title: const Text(
-                    'Song Info',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showSongInfo(song);
-                  },
-                ),
-              ],
-            ),
-          ),
-    );
+    _playAlbum([song]);
   }
 
   void _addToQueue(Song song) {
-    final bloc = context.read<AudioPlayerBloc>();
-    bloc.add(AudioPlayerAddSongEvent(song));
-
+    context.read<AudioPlayerBloc>().add(AudioPlayerAddSongEvent(song));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Added "${song.title}" to queue'),
@@ -521,77 +448,11 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
     );
   }
 
-  void _showSongInfo(Song song) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: const Color(0xFF2A2A2A),
-            title: const Text(
-              'Song Information',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoRow('Title', song.title),
-                _buildInfoRow(
-                  'Artist',
-                  song.artist.isNotEmpty ? song.artist : 'Unknown',
-                ),
-                _buildInfoRow('Duration', _formatDuration(song.duration)),
-                _buildInfoRow('Track', '${song.trackNumber}'),
-                if (song.album != null)
-                  _buildInfoRow('Album', song.album!.title),
-                if (song.year != null)
-                  _buildInfoRow('Year', song.year.toString()),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: Color(0xFF1DB954)),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _playAlbum(List<Song> songs, [int startIndex = 0]) {
     if (songs.isEmpty) return;
-
     context.read<AudioPlayerBloc>().add(
       AudioPlayerLoadPlaylistEvent(songs, initialIndex: startIndex),
     );
-
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
@@ -599,24 +460,7 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
 
   void _shuffleAlbum(List<Song> songs) {
     if (songs.isEmpty) return;
-
-    final bloc = context.read<AudioPlayerBloc>();
-
-    // Create a shuffled copy of the songs
     final shuffledSongs = List<Song>.from(songs)..shuffle();
-
-    // Clear playlist and add shuffled songs
-    bloc.add(AudioPlayerClearPlaylistEvent());
-
-    for (final song in shuffledSongs) {
-      bloc.add(AudioPlayerAddSongEvent(song));
-    }
-
-    bloc.add(AudioPlayerPlayEvent());
-
-    // Navigate to main player
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
+    _playAlbum(shuffledSongs);
   }
 }
