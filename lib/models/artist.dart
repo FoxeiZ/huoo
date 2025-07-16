@@ -115,7 +115,7 @@ class ArtistProvider extends BaseProvider<Artist> {
       where: 'artist = ?',
       whereArgs: [artistId.toString()],
     );
-    return Future.wait(maps.map((map) => Song.fromMap(map)).toList());
+    return maps.map((map) => Song.fromMap(map)).toList();
   }
 
   Future<List<Album>> getAlbums(int artistId) async {

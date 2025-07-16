@@ -116,6 +116,79 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     });
   }
 
+  Future<void> _testHomeEndpoints() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      _addOutput('Testing home endpoints...');
+
+      // Test single optimized endpoint (1 API call)
+      _addOutput('--- Testing Single Endpoint (Optimized) ---');
+      final stopwatchSingle = Stopwatch()..start();
+
+      final homeData = await _apiService.getHomeScreenData();
+      stopwatchSingle.stop();
+
+      _addOutput(
+        '✅ Single endpoint response time: ${stopwatchSingle.elapsedMilliseconds}ms',
+      );
+      _addOutput('Greeting: ${homeData['greeting_message']}');
+      _addOutput('User: ${homeData['user_display_name']}');
+      _addOutput(
+        'Continue listening: ${(homeData['continue_listening'] as List).length} items',
+      );
+      _addOutput('Top mixes: ${(homeData['top_mixes'] as List).length} items');
+      _addOutput(
+        'Recent listening: ${(homeData['recent_listening'] as List).length} items',
+      );
+      _addOutput(
+        'User stats - Songs: ${homeData['user_stats']['total_songs']}, Artists: ${homeData['user_stats']['total_artists']}',
+      );
+
+      _addOutput('');
+      _addOutput('--- Testing Individual Endpoints (Legacy) ---');
+      final stopwatchMultiple = Stopwatch()..start();
+
+      // Test individual endpoints for comparison
+      final continueListening = await _apiService.getContinueListening();
+      _addOutput('Continue listening: ${continueListening.length} items');
+
+      final topMixes = await _apiService.getTopMixes();
+      _addOutput('Top mixes: ${topMixes.length} items');
+
+      final recentListening = await _apiService.getRecentListening();
+      _addOutput('Recent listening: ${recentListening.length} items');
+
+      final userStats = await _apiService.getUserStats();
+      _addOutput(
+        'User stats - Songs: ${userStats['total_songs']}, Artists: ${userStats['total_artists']}',
+      );
+
+      stopwatchMultiple.stop();
+      _addOutput(
+        '⚠️  Multiple endpoints response time: ${stopwatchMultiple.elapsedMilliseconds}ms',
+      );
+
+      final improvement =
+          ((stopwatchMultiple.elapsedMilliseconds -
+                      stopwatchSingle.elapsedMilliseconds) /
+                  stopwatchMultiple.elapsedMilliseconds *
+                  100)
+              .round();
+      _addOutput(
+        '🚀 Performance improvement: ${improvement}% faster with single endpoint',
+      );
+    } catch (e) {
+      _addOutput('Home endpoints error: $e');
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   void _clearOutput() {
     setState(() {
       _output = '';
@@ -166,6 +239,16 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                   onPressed: _isLoading ? null : _testSearchMusic,
                   icon: const Icon(Icons.search),
                   label: const Text('Test Search'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _testHomeEndpoints,
+                  icon: const Icon(Icons.home),
+                  label: const Text('Test Home'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _testHomeEndpoints,
+                  icon: const Icon(Icons.home),
+                  label: const Text('Test Home API'),
                 ),
               ],
             ),
@@ -260,7 +343,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                     '2. Update the base URL in ApiConfig if needed\n'
                     '3. Test Health Check first (no auth required)\n'
                     '4. Test Protected Endpoint (requires authentication)\n'
-                    '5. Test Get Profile (requires authentication)',
+                    '5. Test Get Profile (requires authentication)\n'
+                    '6. Test Search (requires authentication)\n'
+                    '7. Test Home (requires authentication)',
                     style: TextStyle(fontSize: 12),
                   ),
                 ],
