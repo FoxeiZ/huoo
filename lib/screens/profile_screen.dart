@@ -1,9 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:huoo/bloc/auth_bloc.dart';
+import 'package:huoo/repositories/user_repository.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserRepository _userRepository = UserRepository();
+  UserProfile? _apiUserProfile;
+  bool _isLoadingApiProfile = false;
+  String _apiError = '';
+  bool _isApiConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadApiProfile();
+    _checkApiHealth();
+  }
+
+  Future<void> _loadApiProfile() async {
+    setState(() {
+      _isLoadingApiProfile = true;
+      _apiError = '';
+    });
+
+    try {
+      final profile = await _userRepository.getUserProfile();
+      setState(() {
+        _apiUserProfile = profile;
+        _isLoadingApiProfile = false;
+      });
+    } catch (e) {
+      setState(() {
+        _apiError = 'Failed to load profile from API: $e';
+        _isLoadingApiProfile = false;
+      });
+    }
+  }
+
+  Future<void> _checkApiHealth() async {
+    final isHealthy = await _userRepository.checkApiHealth();
+    setState(() {
+      _isApiConnected = isHealthy;
+    });
+  }
+
+  Future<void> _testApiConnection() async {
+    final isConnected = await _userRepository.testApiConnection();
+    setState(() {
+      _isApiConnected = isConnected;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isConnected
+                ? 'API connection successful!'
+                : 'API connection failed. Check your backend.',
+          ),
+          backgroundColor: isConnected ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +79,15 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
+          // API Status Indicator
+          IconButton(
+            icon: Icon(
+              _isApiConnected ? Icons.cloud_done : Icons.cloud_off,
+              color: _isApiConnected ? Colors.green : Colors.red,
+            ),
+            onPressed: _testApiConnection,
+            tooltip: _isApiConnected ? 'API Connected' : 'API Disconnected',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -59,9 +134,7 @@ class ProfileScreen extends StatelessWidget {
                   // Profile avatar
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.2,
-                    ),
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
                     child:
                         user.photoURL != null
                             ? ClipOval(
@@ -101,11 +174,16 @@ class ProfileScreen extends StatelessWidget {
                   Text(
                     user.email ?? 'No email provided',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
 
                   const SizedBox(height: 32),
+
+                  // API Status Section
+                  _buildApiStatusCard(theme),
+
+                  const SizedBox(height: 24),
 
                   // Account info section
                   Container(
@@ -114,9 +192,7 @@ class ProfileScreen extends StatelessWidget {
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.1,
-                        ),
+                        color: theme.colorScheme.onSurface.withOpacity(0.1),
                       ),
                     ),
                     child: Column(
@@ -177,7 +253,7 @@ class ProfileScreen extends StatelessWidget {
                   Icon(
                     Icons.person_outline,
                     size: 80,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    color: theme.colorScheme.primary.withOpacity(0.5),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -188,7 +264,7 @@ class ProfileScreen extends StatelessWidget {
                   Text(
                     'Create an account to save your preferences',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -236,10 +312,100 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildApiStatusCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color:
+            _isApiConnected
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isApiConnected ? Colors.green : Colors.red,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _isApiConnected ? Icons.cloud_done : Icons.cloud_off,
+                color: _isApiConnected ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'API Status',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: _testApiConnection,
+                child: const Text('Test Connection'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _isApiConnected
+                ? 'Connected to backend API'
+                : 'Cannot connect to backend API',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: _isApiConnected ? Colors.green : Colors.red,
+            ),
+          ),
+          if (_isLoadingApiProfile) ...[
+            const SizedBox(height: 12),
+            const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('Loading API profile...'),
+              ],
+            ),
+          ],
+          if (_apiUserProfile != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'API Profile: ${_apiUserProfile!.displayName ?? _apiUserProfile!.email ?? 'Unknown'}',
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.green),
+            ),
+          ],
+          if (_apiError.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              _apiError,
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.red),
+            ),
+          ],
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _loadApiProfile,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh API Profile'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 36),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getProviderName(String providerId) {
     switch (providerId) {
       case 'google.com':
         return 'Google';
+      case 'apple.com':
+        return 'Apple';
       case 'password':
         return 'Email/Password';
       case 'phone':
@@ -269,7 +435,7 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 4),

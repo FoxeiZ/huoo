@@ -87,13 +87,23 @@ class DatabaseHelper {
 
   Future<void> initialize() async {
     if (!_isInitialized) {
+      log.i('Initializing database...');
+
       if (Platform.isWindows) {
+        log.i('Configuring sqflite for Windows...');
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
+
+      log.i('Opening database...');
       _database = await _initDatabase();
+
+      // Ensure tables exist (fallback if onCreate wasn't called)
+      await _ensureTablesExist(_database);
+
       _databaseWrapper = DatabaseWrapper(_database);
 
+      log.i('Initializing providers...');
       // init providers
       _songProvider = SongProvider(_databaseWrapper);
       _albumProvider = AlbumProvider(_databaseWrapper);
@@ -103,6 +113,10 @@ class DatabaseHelper {
       // _playlistProvider = PlaylistProvider(_database!);
 
       _isInitialized = true;
+
+      log.i(
+        'Database initialization complete. Running post-initialization tasks...',
+      );
       await afterInitialize();
     }
   }
@@ -132,13 +146,29 @@ class DatabaseHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    log.i('Creating database tables...');
+
+    log.i('Creating songs table...');
     await SongProvider.createTable(db);
+
+    log.i('Creating albums table...');
     await AlbumProvider.createTable(db);
+
+    log.i('Creating artists table...');
     await ArtistProvider.createTable(db);
+
+    log.i('Creating song_artists table...');
     await SongArtistProvider.createTable(db);
+
+    log.i('Creating album_artists table...');
     await AlbumArtistProvider.createTable(db);
+
     // await PlaylistProvider.createTable(db);
+
+    log.i('Creating indexes...');
     await _createIndexes(db);
+
+    log.i('Database tables created successfully');
   }
 
   /// Create database indexes for better query performance
@@ -780,5 +810,22 @@ class DatabaseHelper {
       album: insertedAlbum,
       artists: [insertedArtist],
     );
+  }
+
+  /// Manually ensure all tables exist - fallback if onCreate is not called
+  Future<void> _ensureTablesExist(Database db) async {
+    log.i('Checking if tables exist...');
+
+    // Check if artists table exists
+    final result = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='artists'",
+    );
+
+    if (result.isEmpty) {
+      log.w('Tables do not exist, creating them manually...');
+      await _onCreate(db, 1);
+    } else {
+      log.i('Tables already exist');
+    }
   }
 }

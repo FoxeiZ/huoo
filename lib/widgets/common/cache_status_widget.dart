@@ -46,7 +46,7 @@ class _CacheStatusWidgetState extends State<CacheStatusWidget> {
   Widget build(BuildContext context) {
     return widget.showLastUpdated
         ? Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

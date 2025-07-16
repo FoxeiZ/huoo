@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/screens/folder_selection_screen.dart';
+import 'package:huoo/screens/api_test_screen.dart';
 import 'package:huoo/helpers/database/helper.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -143,6 +144,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => _showStorageSettings(),
               ),
 
+              const SizedBox(height: 8),
+
+              _buildSettingsItem(
+                icon: Icons.api,
+                title: 'API Test',
+                subtitle: 'Test backend API connection',
+                onTap: () => _navigateToApiTest(),
+              ),
+
               const SizedBox(height: 24),
 
               // About Section
@@ -254,6 +264,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Refresh stats when returning from folder management
           _loadStats();
         });
+  }
+
+  void _navigateToApiTest() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const ApiTestScreen()));
   }
 
   void _rescanLibrary() {

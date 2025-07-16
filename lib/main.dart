@@ -14,6 +14,7 @@ import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/services/setup_wizard_manager.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: ProductionFilter(),
   level: Level.all,
   output: ConsoleOutput(),
@@ -21,8 +22,8 @@ final log = Logger(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await DatabaseHelper().initialize();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   JustAudioMediaKit.ensureInitialized();
   await AuthService().ensureInitialized();
   await JustAudioBackground.init(
@@ -60,7 +61,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Widget that determines the initial screen based on setup status
 class AppInitializer extends StatefulWidget {
   const AppInitializer({super.key});
 
