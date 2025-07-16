@@ -2,8 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
 
+final log = Logger(
+  printer: SimplePrinter(),
+  filter: ProductionFilter(),
+  level: Level.all,
+  output: ConsoleOutput(),
+);
+
 class AuthService {
-  static final Logger _log = Logger();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
@@ -31,7 +37,7 @@ class AuthService {
           .signInWithEmailAndPassword(email: email, password: password);
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      _log.e('Error signing in with email and password: ${e.message}');
+      log.e('Error signing in with email and password: ${e.message}');
       rethrow;
     }
   }
@@ -46,7 +52,7 @@ class AuthService {
           .createUserWithEmailAndPassword(email: email, password: password);
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      _log.e('Error creating user with email and password: ${e.message}');
+      log.e('Error creating user with email and password: ${e.message}');
       rethrow;
     }
   }
@@ -68,10 +74,10 @@ class AuthService {
       );
       return await _auth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
-      _log.e('Error signing in with Google: ${e.message}');
+      log.e('Error signing in with Google: ${e.message}');
       rethrow;
     } catch (e, stackTrace) {
-      _log.e(
+      log.e(
         'Unexpected error during Google sign in: $e',
         stackTrace: stackTrace,
       );
@@ -84,7 +90,7 @@ class AuthService {
     try {
       return await _auth.signInAnonymously();
     } on FirebaseAuthException catch (e) {
-      _log.e('Error signing in anonymously: ${e.message}');
+      log.e('Error signing in anonymously: ${e.message}');
       rethrow;
     }
   }
@@ -95,7 +101,7 @@ class AuthService {
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
-      _log.e('Error signing out: $e');
+      log.e('Error signing out: $e');
       rethrow;
     }
   }
@@ -105,7 +111,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
-      _log.e('Error sending password reset email: ${e.message}');
+      log.e('Error sending password reset email: ${e.message}');
       rethrow;
     }
   }
@@ -116,7 +122,7 @@ class AuthService {
       await _auth.currentUser?.updateDisplayName(displayName);
       await _auth.currentUser?.updatePhotoURL(photoURL);
     } catch (e) {
-      _log.e('Error updating profile: $e');
+      log.e('Error updating profile: $e');
       rethrow;
     }
   }

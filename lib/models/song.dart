@@ -22,6 +22,7 @@ import 'package:huoo/helpers/database/helper.dart';
 import 'package:huoo/models/album.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: ProductionFilter(),
   level: Level.all,
   output: ConsoleOutput(),

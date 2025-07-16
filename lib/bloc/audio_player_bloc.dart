@@ -14,6 +14,7 @@ part 'audio_player_event.dart';
 part 'audio_player_state.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: ProductionFilter(),
   level: Level.all,
   output: ConsoleOutput(),

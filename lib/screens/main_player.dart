@@ -7,6 +7,7 @@ import 'package:huoo/models/song.dart';
 import 'package:huoo/widgets/audio/seekbar.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: ProductionFilter(),
   level: Level.all,
   output: ConsoleOutput(),

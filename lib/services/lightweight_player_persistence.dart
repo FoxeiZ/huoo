@@ -6,6 +6,7 @@ import '../models/song_reference.dart';
 import '../helpers/database/helper.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: DevelopmentFilter(),
   level: Level.all,
   output: ConsoleOutput(),

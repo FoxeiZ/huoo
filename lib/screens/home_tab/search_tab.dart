@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huoo/screens/search_results_screen.dart';
 
 class SearchTab extends StatelessWidget {
   const SearchTab({super.key});
@@ -62,6 +63,17 @@ class SearchTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: TextField(
+                    onSubmitted: (value) {
+                      if (context.mounted) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    SearchResultsScreen(initialQuery: value),
+                          ),
+                        );
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: "Songs, Artists, Podcasts & More",
                       hintStyle: TextStyle(color: Colors.grey.shade600),

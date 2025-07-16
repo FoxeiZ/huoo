@@ -152,8 +152,6 @@ class LibraryTabState extends State<LibraryTab>
               ),
             ),
 
-            const SizedBox(height: 16),
-
             // Content based on selected tab
             Expanded(
               child: TabBarView(
