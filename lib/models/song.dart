@@ -255,7 +255,7 @@ class Song extends Equatable {
     return Song.fromLocalFile(file.path);
   }
 
-  static Future<Song> fromMap(Map<String, dynamic> map) async {
+  static Song fromMap(Map<String, dynamic> map) {
     return Song(
       id: map[SongColumns.id] as int?,
       path: map[SongColumns.path] as String,
@@ -344,9 +344,12 @@ class Song extends Equatable {
     }
     final helper = DatabaseHelper();
     final id = int.tryParse(mediaItem.id) ?? -1;
-    log.e(
-      'Song.fromMediaItem called from $from: id=$id, path=${mediaItem.extras?['path']}',
-    );
+    final isRemote = mediaItem.isLive ?? false;
+    if (isRemote) {
+      return (Song.fromMap(
+        mediaItem.extras ?? {},
+      )).copyWith(id: id, source: AudioSourceEnum.api);
+    }
     return await helper.songProvider.getSongWithDetails(id);
   }
 
@@ -376,6 +379,7 @@ class Song extends Equatable {
       duration: duration,
       genre: genres.isNotEmpty ? genres.join(', ') : null,
       album: await getAlbum().then((album) => album.title),
+      extras: toMap()..remove(SongColumns.id),
     );
   }
 
@@ -751,7 +755,7 @@ class SongProvider extends BaseProvider<Song> {
     if (songMaps.isEmpty) return null;
 
     final songMap = songMaps.first;
-    final song = await Song.fromMap(songMap);
+    final song = Song.fromMap(songMap);
 
     // Build album from the joined data
     final album =
@@ -803,7 +807,7 @@ class SongProvider extends BaseProvider<Song> {
     List<Song> results = [];
 
     for (final songMap in songMaps) {
-      final song = await Song.fromMap(songMap);
+      final song = Song.fromMap(songMap);
 
       final album =
           songMap['album_id'] != null
@@ -861,7 +865,7 @@ class SongProvider extends BaseProvider<Song> {
     List<Song> results = [];
 
     for (final songMap in songMaps) {
-      final song = await Song.fromMap(songMap);
+      final song = Song.fromMap(songMap);
 
       final album = Album(
         id: songMap['album_id'] as int?,
@@ -916,7 +920,7 @@ class SongProvider extends BaseProvider<Song> {
     List<Song> results = [];
 
     for (final songMap in songMaps) {
-      final song = await Song.fromMap(songMap);
+      final song = Song.fromMap(songMap);
 
       final album =
           songMap['album_id'] != null
@@ -978,7 +982,7 @@ class SongProvider extends BaseProvider<Song> {
     List<Song> results = [];
 
     for (final songMap in songMaps) {
-      final song = await Song.fromMap(songMap);
+      final song = Song.fromMap(songMap);
 
       final album =
           songMap['album_id'] != null

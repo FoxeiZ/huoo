@@ -14,6 +14,7 @@ import 'package:huoo/models/many/album_artist.dart';
 import 'package:huoo/helpers/database/types.dart';
 
 final log = Logger(
+  printer: SimplePrinter(),
   filter: DevelopmentFilter(),
   level: Level.all,
   output: ConsoleOutput(),

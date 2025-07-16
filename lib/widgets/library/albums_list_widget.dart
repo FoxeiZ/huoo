@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:huoo/models/album.dart';
 import 'package:huoo/models/song.dart';
-import 'package:huoo/bloc/audio_player_bloc.dart';
-import 'package:huoo/screens/main_player.dart';
 import 'package:huoo/services/albums_cache.dart';
 import 'package:huoo/widgets/common/cache_status_widget.dart';
-import 'package:huoo/widgets/common/song_tile.dart';
+import 'library_details_modal.dart';
+import 'library_action_utils.dart';
 
 class AlbumsListWidget extends StatefulWidget {
   const AlbumsListWidget({super.key});
@@ -276,191 +274,16 @@ class _AlbumsListWidgetState extends State<AlbumsListWidget> {
   }
 
   void _showAlbumDetails(Album album, List<Song> songs) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            builder:
-                (context, scrollController) => Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Row(
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF1DB954,
-                              ).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child:
-                                songs.isNotEmpty && songs.first.cover != null
-                                    ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.asset(
-                                        songs.first.cover!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return const Icon(
-                                            Icons.album,
-                                            color: Color(0xFF1DB954),
-                                            size: 32,
-                                          );
-                                        },
-                                      ),
-                                    )
-                                    : const Icon(
-                                      Icons.album,
-                                      color: Color(0xFF1DB954),
-                                      size: 32,
-                                    ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  album.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${songs.length} song${songs.length != 1 ? 's' : ''}',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                if (album.releaseDate != null)
-                                  Text(
-                                    album.releaseDate!.year.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Play buttons
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _playAlbum(songs);
-                            },
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Play'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1DB954),
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _shuffleAlbum(songs);
-                            },
-                            icon: const Icon(Icons.shuffle),
-                            label: const Text('Shuffle'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white54),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Songs List
-                      const Text(
-                        'Songs',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: ListView.builder(
-                          controller: scrollController,
-                          itemCount: songs.length,
-                          itemBuilder: (context, index) {
-                            final song = songs[index];
-                            return SongTile(
-                              song: song,
-                              onTap: () {
-                                Navigator.pop(context);
-                                _playAlbum(songs, index);
-                              },
-                              onPlayOptionPressed: _playSong,
-                              onQueueOptionPressed: _addToQueue,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-          ),
-    );
-  }
-
-  void _playSong(Song song) {
-    _playAlbum([song]);
-  }
-
-  void _addToQueue(Song song) {
-    context.read<AudioPlayerBloc>().add(AudioPlayerAddSongEvent(song));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added "${song.title}" to queue'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF1DB954),
-      ),
-    );
-  }
-
-  void _playAlbum(List<Song> songs, [int startIndex = 0]) {
-    if (songs.isEmpty) return;
-    context.read<AudioPlayerBloc>().add(
-      AudioPlayerLoadPlaylistEvent(songs, initialIndex: startIndex),
-    );
-    Navigator.of(
+    LibraryDetailsModal.showAlbumDetails(
       context,
-    ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
-  }
-
-  void _shuffleAlbum(List<Song> songs) {
-    if (songs.isEmpty) return;
-    final shuffledSongs = List<Song>.from(songs)..shuffle();
-    _playAlbum(shuffledSongs);
+      album,
+      songs,
+      onSongTap:
+          (songs, index) => LibraryActionUtils.playSongs(context, songs, index),
+      onSongPlay: (song) => LibraryActionUtils.playSong(context, song),
+      onSongQueue: (song) => LibraryActionUtils.addSongToQueue(context, song),
+      onPlayAll: (songs) => LibraryActionUtils.playSongs(context, songs),
+      onShuffle: (songs) => LibraryActionUtils.shufflePlay(context, songs),
+    );
   }
 }

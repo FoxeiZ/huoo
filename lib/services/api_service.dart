@@ -133,16 +133,30 @@ class ApiService {
     final statusCode = response.statusCode;
 
     try {
-      final responseBody = json.decode(response.body) as Map<String, dynamic>;
+      final responseBody = json.decode(response.body);
 
       if (statusCode >= 200 && statusCode < 300) {
-        return responseBody;
+        // Ensure we always return a Map
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else if (responseBody is List) {
+          // Wrap Lists in a Map structure for consistency
+          return {'items': responseBody, 'total_count': responseBody.length};
+        } else {
+          // Handle other types (strings, numbers, etc.)
+          return {'data': responseBody};
+        }
       } else {
-        final message = responseBody['detail'] ?? 'Unknown error occurred';
+        // Handle error responses (should be Map with error details)
+        final errorMap =
+            responseBody is Map<String, dynamic>
+                ? responseBody
+                : {'detail': responseBody.toString()};
+        final message = errorMap['detail'] ?? 'Unknown error occurred';
         throw ApiException(
           message.toString(),
           statusCode: statusCode,
-          details: responseBody,
+          details: errorMap,
         );
       }
     } catch (e) {
@@ -262,6 +276,31 @@ class ApiService {
     );
   }
 
+  /// Get search suggestions
+  Future<Map<String, dynamic>> getSearchSuggestions({
+    required String query,
+    int limit = 10,
+  }) async {
+    final queryParams = <String, String>{'q': query, 'limit': limit.toString()};
+
+    return await _makeRequest(
+      method: 'GET',
+      endpoint: '/search/suggestions',
+      queryParams: queryParams,
+    );
+  }
+
+  /// Get trending searches
+  Future<Map<String, dynamic>> getTrendingSearches({int limit = 10}) async {
+    final queryParams = <String, String>{'limit': limit.toString()};
+
+    return await _makeRequest(
+      method: 'GET',
+      endpoint: '/search/trending',
+      queryParams: queryParams,
+    );
+  }
+
   // ============ PLAYLIST ENDPOINTS ============
 
   /// Get user's playlists
@@ -308,7 +347,68 @@ class ApiService {
     );
   }
 
-  // ============ UTILITY ENDPOINTS ============
+  // ============ HOME ENDPOINTS ============
+
+  /// Get home screen data
+  Future<Map<String, dynamic>> getHomeScreenData() async {
+    return await _makeRequest(method: 'GET', endpoint: '/home');
+  }
+
+  /// Get continue listening items
+  Future<List<dynamic>> getContinueListening({int limit = 6}) async {
+    final result = await _makeRequest(
+      method: 'GET',
+      endpoint: '/home/continue-listening',
+      queryParams: {'limit': limit.toString()},
+    );
+
+    // API now returns {items: [...], total_count: N}
+    if (result['items'] is List) {
+      return result['items'];
+    }
+
+    log.w('Expected items List but got ${result.runtimeType}: $result');
+    return <dynamic>[];
+  }
+
+  /// Get top mixes
+  Future<List<dynamic>> getTopMixes({int limit = 4}) async {
+    final result = await _makeRequest(
+      method: 'GET',
+      endpoint: '/home/top-mixes',
+      queryParams: {'limit': limit.toString()},
+    );
+
+    // API now returns {items: [...], total_count: N}
+    if (result['items'] is List) {
+      return result['items'];
+    }
+
+    log.w('Expected items List but got ${result.runtimeType}: $result');
+    return <dynamic>[];
+  }
+
+  /// Get recent listening
+  Future<List<dynamic>> getRecentListening({int limit = 6}) async {
+    final result = await _makeRequest(
+      method: 'GET',
+      endpoint: '/home/recent-listening',
+      queryParams: {'limit': limit.toString()},
+    );
+
+    // API now returns {items: [...], total_count: N}
+    if (result['items'] is List) {
+      return result['items'];
+    }
+
+    log.w('Expected items List but got ${result.runtimeType}: $result');
+    return <dynamic>[];
+  }
+
+  /// Get user stats
+  Future<Map<String, dynamic>> getUserStats() async {
+    return await _makeRequest(method: 'GET', endpoint: '/home/stats');
+  }
 
   /// Health check
   Future<Map<String, dynamic>> healthCheck() async {

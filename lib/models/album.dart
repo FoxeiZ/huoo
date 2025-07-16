@@ -132,7 +132,7 @@ class AlbumProvider extends BaseProvider<Album> {
       where: '${AlbumColumns.id} = ?',
       whereArgs: [albumId],
     );
-    return Future.wait(maps.map((map) => Song.fromMap(map)).toList());
+    return maps.map((map) => Song.fromMap(map)).toList();
   }
 
   static Future<void> createTable(Database db) async {
