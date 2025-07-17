@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:huoo/services/api_service.dart';
+import 'package:huoo/services/search_api_service.dart';
 import 'package:huoo/widgets/search/search_results_widget.dart';
 
 class SearchResultsScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class SearchResultsScreen extends StatefulWidget {
 }
 
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
-  final ApiService _apiService = ApiService();
+  final SearchApiService _searchApiService = SearchApiService();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -69,7 +69,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     });
 
     try {
-      final response = await _apiService.searchMusic(
+      final response = await _searchApiService.searchMusic(
         query: _searchController.text.trim(),
         page: _currentPage,
         limit: 20,

@@ -1,3 +1,4 @@
+import 'package:huoo/services/user_api_service.dart';
 import 'package:huoo/services/api_service.dart';
 import 'package:logger/logger.dart';
 
@@ -9,7 +10,8 @@ final log = Logger(
 );
 
 class UserRepository {
-  final ApiService _apiService = ApiService();
+  final UserApiService _userApiService = UserApiService();
+  final ApiService _apiService = ApiService(); // Keep for healthCheck
 
   // Singleton pattern
   static final UserRepository _instance = UserRepository._internal();
@@ -19,7 +21,7 @@ class UserRepository {
   /// Get user profile data
   Future<UserProfile?> getUserProfile() async {
     try {
-      final response = await _apiService.getUserProfile();
+      final response = await _userApiService.getUserProfile();
       return UserProfile.fromJson(response);
     } on ApiException catch (e) {
       log.e('Failed to get user profile: ${e.message}');
@@ -36,7 +38,7 @@ class UserRepository {
     String? photoUrl,
   }) async {
     try {
-      await _apiService.updateUserProfile(
+      await _userApiService.updateUserProfile(
         displayName: displayName,
         photoUrl: photoUrl,
       );
@@ -53,7 +55,7 @@ class UserRepository {
   /// Test API connection with a protected endpoint
   Future<bool> testApiConnection() async {
     try {
-      await _apiService.testProtectedEndpoint();
+      await _userApiService.testProtectedEndpoint();
       return true;
     } on ApiException catch (e) {
       log.e('API connection test failed: ${e.message}');
@@ -67,7 +69,11 @@ class UserRepository {
   /// Check if API is healthy (doesn't require auth)
   Future<bool> checkApiHealth() async {
     try {
-      final response = await _apiService.healthCheck();
+      final response = await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/health',
+        requireAuth: false,
+      );
       return response['status'] == 'healthy';
     } on ApiException catch (e) {
       log.e('API health check failed: ${e.message}');
