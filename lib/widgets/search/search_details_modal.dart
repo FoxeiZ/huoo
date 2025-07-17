@@ -88,7 +88,6 @@ class SearchDetailsModal extends StatelessWidget {
     );
   }
 
-  /// Show album details modal
   static void showAlbumDetails(
     BuildContext context, {
     required String title,
@@ -157,7 +156,6 @@ class SearchDetailsModal extends StatelessWidget {
     );
   }
 
-  /// Show artist details modal
   static void showArtistDetails(
     BuildContext context, {
     required String name,

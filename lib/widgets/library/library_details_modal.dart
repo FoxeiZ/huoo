@@ -144,7 +144,6 @@ class LibraryDetailsModal extends StatelessWidget {
     );
   }
 
-  /// Creates an album details modal
   static void showAlbumDetails(
     BuildContext context,
     Album album,
@@ -176,7 +175,6 @@ class LibraryDetailsModal extends StatelessWidget {
     );
   }
 
-  /// Creates an artist details modal
   static void showArtistDetails(
     BuildContext context,
     Artist artist,

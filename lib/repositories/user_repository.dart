@@ -18,7 +18,6 @@ class UserRepository {
   factory UserRepository() => _instance;
   UserRepository._internal();
 
-  /// Get user profile data
   Future<UserProfile?> getUserProfile() async {
     try {
       final response = await _userApiService.getUserProfile();
@@ -32,7 +31,6 @@ class UserRepository {
     }
   }
 
-  /// Update user profile
   Future<bool> updateUserProfile({
     String? displayName,
     String? photoUrl,
@@ -52,7 +50,6 @@ class UserRepository {
     }
   }
 
-  /// Test API connection with a protected endpoint
   Future<bool> testApiConnection() async {
     try {
       await _userApiService.testProtectedEndpoint();
@@ -66,7 +63,6 @@ class UserRepository {
     }
   }
 
-  /// Check if API is healthy (doesn't require auth)
   Future<bool> checkApiHealth() async {
     try {
       final response = await _apiService.makeRequest(
@@ -85,7 +81,6 @@ class UserRepository {
   }
 }
 
-/// User profile model
 class UserProfile {
   final String uid;
   final String? email;

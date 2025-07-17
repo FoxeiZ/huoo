@@ -99,9 +99,6 @@ class DatabaseHelper {
       log.i('Opening database...');
       _database = await _initDatabase();
 
-      // Ensure tables exist (fallback if onCreate wasn't called)
-      await _ensureTablesExist(_database);
-
       _databaseWrapper = DatabaseWrapper(_database);
 
       log.i('Initializing providers...');
@@ -172,9 +169,7 @@ class DatabaseHelper {
     log.i('Database tables created successfully');
   }
 
-  /// Create database indexes for better query performance
   Future<void> _createIndexes(Database db) async {
-    // Songs table indexes
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_songs_album_id ON ${SongColumns.table}(${SongColumns.albumId})',
     );
@@ -575,10 +570,6 @@ class DatabaseHelper {
     return result;
   }
 
-  /// Optimized bulk import method with batching for maximum performance
-  ///
-  /// This method is specifically optimized for large music library imports
-  /// by using database batching and minimizing individual queries
   Future<BulkImportResult> optimizedBulkImportSongs({
     required List<Map<String, dynamic>> songDataList,
     int chunkSize = 50,
@@ -766,7 +757,6 @@ class DatabaseHelper {
     });
   }
 
-  /// Simple song insertion method following the same pattern as addTestData
   Future<Song> insertSong({
     required Song song,
     required Album album,
@@ -811,22 +801,5 @@ class DatabaseHelper {
       album: insertedAlbum,
       artists: [insertedArtist],
     );
-  }
-
-  /// Manually ensure all tables exist - fallback if onCreate is not called
-  Future<void> _ensureTablesExist(Database db) async {
-    log.i('Checking if tables exist...');
-
-    // Check if artists table exists
-    final result = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='artists'",
-    );
-
-    if (result.isEmpty) {
-      log.w('Tables do not exist, creating them manually...');
-      await _onCreate(db, 1);
-    } else {
-      log.i('Tables already exist');
-    }
   }
 }
