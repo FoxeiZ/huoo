@@ -4,7 +4,6 @@ import '../../bloc/audio_player_bloc.dart';
 import '../../models/song.dart';
 import '../../screens/main_player.dart';
 
-/// Utility class for common library actions across widgets
 class LibraryActionUtils {
   static void showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(

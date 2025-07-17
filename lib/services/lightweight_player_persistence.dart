@@ -112,7 +112,7 @@ class PlayerPersistenceService {
     }
   }
 
-  /// Convert song references back to full Song objects (only when needed)
+  /// make song references back to full Song objects (only when needed)
   static Future<List<Song>> reconstructSongs(
     List<SongReference> references,
   ) async {
@@ -137,7 +137,6 @@ class PlayerPersistenceService {
     return songs;
   }
 
-  /// Extract song references from audio sources (fast operation)
   static List<SongReference> extractSongReferences(List<dynamic> audioSources) {
     final references = <SongReference>[];
 

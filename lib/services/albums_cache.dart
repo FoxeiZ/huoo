@@ -18,7 +18,6 @@ class AlbumsCache {
   final _listeners = <Function>[];
   final SongsCache _songsCache = SongsCache();
 
-  /// Returns cached albums if available, otherwise loads from database
   Future<Map<String, dynamic>> getAlbums({bool forceRefresh = false}) async {
     // If we're already loading albums, wait for that to complete
     if (_isLoading) {
@@ -82,7 +81,6 @@ class AlbumsCache {
     }
   }
 
-  /// Converts a map of album IDs to song IDs into a map of album IDs to Song objects
   Future<Map<int, List<Song>>> _convertIdsToSongs(
     Map<int, List<int>> albumSongIds,
   ) async {
@@ -105,7 +103,6 @@ class AlbumsCache {
     return result;
   }
 
-  /// Clears the albums cache
   void clearCache() {
     _cachedAlbums = null;
     _cachedAlbumSongIds = null;
@@ -113,24 +110,20 @@ class AlbumsCache {
     _notifyListeners();
   }
 
-  /// Adds a listener to be notified when the cache changes
   void addListener(Function listener) {
     _listeners.add(listener);
   }
 
-  /// Removes a listener
   void removeListener(Function listener) {
     _listeners.remove(listener);
   }
 
-  /// Notifies all listeners that the cache has changed
   void _notifyListeners() {
     for (final listener in _listeners) {
       listener();
     }
   }
 
-  /// Returns true if the cache is empty or has expired
   bool get needsRefresh {
     if (_cachedAlbums == null ||
         _cachedAlbumSongIds == null ||
@@ -143,9 +136,7 @@ class AlbumsCache {
     return DateTime.now().isAfter(expiryTime);
   }
 
-  /// Returns the last time the cache was updated
   DateTime? get lastUpdated => _lastUpdated;
 
-  /// Returns true if albums are currently being loaded
   bool get isLoading => _isLoading;
 }
