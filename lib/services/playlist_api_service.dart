@@ -24,11 +24,17 @@ class PlaylistApiService {
         method: 'GET',
         endpoint: '/playlists',
       );
-      final List<dynamic> playlistsJson =
-          response['items'] ?? response['data'] ?? [];
-      return playlistsJson
-          .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
-          .toList();
+
+      // Handle the response structure from the Python API
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+        final List<dynamic> playlistsJson = data['playlists'] ?? data ?? [];
+        return playlistsJson
+            .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      return [];
     } catch (e) {
       _logger.e('Failed to fetch playlists: $e');
       rethrow;
@@ -43,7 +49,8 @@ class PlaylistApiService {
     try {
       final body = {
         'name': name,
-        if (description != null) 'description': description,
+        if (description != null && description.isNotEmpty)
+          'description': description,
       };
 
       final response = await _apiService.makeRequest(
@@ -51,7 +58,13 @@ class PlaylistApiService {
         endpoint: '/playlists',
         body: body,
       );
-      return Playlist.fromJson(response);
+
+      // Handle the response structure from the Python API
+      if (response['status'] == 'success' && response['data'] != null) {
+        return Playlist.fromJson(response['data'] as Map<String, dynamic>);
+      }
+
+      throw Exception('Invalid response format');
     } catch (e) {
       _logger.e('Failed to create playlist: $e');
       rethrow;
@@ -64,9 +77,12 @@ class PlaylistApiService {
     required String musicId,
   }) async {
     try {
+      final body = {'song_id': musicId};
+
       await _apiService.makeRequest(
         method: 'POST',
-        endpoint: '/playlists/$playlistId/songs/$musicId',
+        endpoint: '/playlists/$playlistId/songs',
+        body: body,
       );
     } catch (e) {
       _logger.e('Failed to add song $musicId to playlist $playlistId: $e');
@@ -86,6 +102,19 @@ class PlaylistApiService {
       );
     } catch (e) {
       _logger.e('Failed to remove song $musicId from playlist $playlistId: $e');
+      rethrow;
+    }
+  }
+
+  // Delete a playlist
+  Future<void> deletePlaylist(String playlistId) async {
+    try {
+      await _apiService.makeRequest(
+        method: 'DELETE',
+        endpoint: '/playlists/$playlistId',
+      );
+    } catch (e) {
+      _logger.e('Failed to delete playlist $playlistId: $e');
       rethrow;
     }
   }

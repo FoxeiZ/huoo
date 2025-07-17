@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/models/playlist.dart';
-import 'package:huoo/services/playlist_cache_service.dart';
-import 'package:huoo/helpers/database/helper.dart';
+import 'package:huoo/services/playlist_api_service.dart';
 
 class PlaylistsListWidget extends StatefulWidget {
   const PlaylistsListWidget({super.key});
@@ -13,7 +12,7 @@ class PlaylistsListWidget extends StatefulWidget {
 class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final PlaylistCacheService _playlistService = PlaylistCacheService();
+  final PlaylistApiService _playlistService = PlaylistApiService();
 
   List<Playlist> _localPlaylists = [];
   List<Playlist> _onlinePlaylists = [];
@@ -35,23 +34,19 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
   }
 
   Future<void> _initializeService() async {
-    final dbHelper = DatabaseHelper();
-    await dbHelper.initialize();
-    // For now, let's create our own providers directly
-    // await _playlistService.initialize(dbWrapper);
+    // The PlaylistApiService doesn't need initialization
   }
 
   Future<void> _loadPlaylists() async {
     setState(() => _isLoading = true);
 
     try {
-      // For now, use empty lists until we can properly initialize the service
-      // final localPlaylists = await _playlistService.getLocalPlaylists();
-      // final cachedOnlinePlaylists = await _playlistService.getCachedOnlinePlaylists();
+      // Load online playlists from API
+      final playlists = await _playlistService.getPlaylists();
 
       setState(() {
-        _localPlaylists = []; // localPlaylists;
-        _onlinePlaylists = []; // cachedOnlinePlaylists;
+        _localPlaylists = []; // Local playlists not implemented yet
+        _onlinePlaylists = playlists;
         _isLoading = false;
       });
     } catch (e) {
@@ -68,9 +63,9 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
     setState(() => _isLoadingOnline = true);
 
     try {
-      // final synced = await _playlistService.syncOnlinePlaylists();
+      final playlists = await _playlistService.getPlaylists();
       setState(() {
-        // _onlinePlaylists = synced;
+        _onlinePlaylists = playlists;
         _isLoadingOnline = false;
       });
 
@@ -163,42 +158,34 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
 
     if (result == true && nameController.text.trim().isNotEmpty) {
       try {
-        // For now, just show a message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Creating ${type == PlaylistType.local ? 'local' : 'online'} playlist: ${nameController.text.trim()}',
-              ),
-            ),
-          );
-        }
+        final description =
+            descriptionController.text.trim().isEmpty
+                ? null
+                : descriptionController.text.trim();
 
-        /*
-        final description = descriptionController.text.trim().isEmpty 
-            ? null 
-            : descriptionController.text.trim();
-
-        if (type == PlaylistType.local) {
-          await _playlistService.createLocalPlaylist(
+        if (type == PlaylistType.online) {
+          await _playlistService.createPlaylist(
             name: nameController.text.trim(),
             description: description,
           );
+
+          _loadPlaylists();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Playlist created successfully')),
+            );
+          }
         } else {
-          await _playlistService.createOnlinePlaylist(
-            name: nameController.text.trim(),
-            description: description,
-          );
+          // Local playlists not implemented yet
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Local playlists not implemented yet'),
+              ),
+            );
+          }
         }
-
-        _loadPlaylists();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Playlist created successfully')),
-          );
-        }
-        */
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -339,7 +326,9 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
 
     if (confirm == true) {
       try {
-        await _playlistService.deletePlaylist(playlist);
+        await _playlistService.deletePlaylist(
+          playlist.apiId ?? playlist.id.toString(),
+        );
         _loadPlaylists();
 
         if (mounted) {
