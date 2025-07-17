@@ -110,7 +110,7 @@ class SearchDetailsModal extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF1DB954).withOpacity(0.2),
+                color: const Color(0xFF1DB954).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -177,7 +177,7 @@ class SearchDetailsModal extends StatelessWidget {
           (context) => SearchDetailsModal(
             leadingWidget: CircleAvatar(
               radius: 40,
-              backgroundColor: const Color(0xFF1DB954).withOpacity(0.2),
+              backgroundColor: const Color(0xFF1DB954).withValues(alpha: 0.2),
               child: const Icon(
                 Icons.person,
                 color: Color(0xFF1DB954),

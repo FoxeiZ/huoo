@@ -178,7 +178,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                   100)
               .round();
       _addOutput(
-        '🚀 Performance improvement: ${improvement}% faster with single endpoint',
+        '🚀 Performance improvement: $improvement% faster with single endpoint',
       );
     } catch (e) {
       _addOutput('Home endpoints error: $e');
@@ -259,7 +259,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -325,7 +327,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(

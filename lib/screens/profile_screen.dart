@@ -134,7 +134,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Profile avatar
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.2,
+                    ),
                     child:
                         user.photoURL != null
                             ? ClipOval(
@@ -174,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     user.email ?? 'No email provided',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
 
@@ -192,7 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.onSurface.withOpacity(0.1),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.1,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -253,7 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Icon(
                     Icons.person_outline,
                     size: 80,
-                    color: theme.colorScheme.primary.withOpacity(0.5),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -264,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     'Create an account to save your preferences',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -318,8 +322,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color:
             _isApiConnected
-                ? Colors.green.withOpacity(0.1)
-                : Colors.red.withOpacity(0.1),
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isApiConnected ? Colors.green : Colors.red,
@@ -435,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 4),

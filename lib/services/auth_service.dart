@@ -42,7 +42,6 @@ class AuthService {
     }
   }
 
-  // Sign up with email and password
   Future<UserCredential> createUserWithEmailAndPassword(
     String email,
     String password,
@@ -57,7 +56,6 @@ class AuthService {
     }
   }
 
-  // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final authorize = await _googleSignIn.authorizationClient
@@ -85,7 +83,6 @@ class AuthService {
     }
   }
 
-  // Sign in anonymously
   Future<UserCredential> signInAnonymously() async {
     try {
       return await _auth.signInAnonymously();
@@ -95,7 +92,6 @@ class AuthService {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
@@ -106,7 +102,6 @@ class AuthService {
     }
   }
 
-  // Password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -116,7 +111,6 @@ class AuthService {
     }
   }
 
-  // Update user profile
   Future<void> updateProfile({String? displayName, String? photoURL}) async {
     try {
       await _auth.currentUser?.updateDisplayName(displayName);
@@ -127,7 +121,6 @@ class AuthService {
     }
   }
 
-  // Get user display name or email
   String get userDisplayName {
     final user = _auth.currentUser;
     if (user == null) return 'Guest';

@@ -3,9 +3,9 @@ import 'package:huoo/models/song.dart';
 import 'package:huoo/models/album.dart';
 import 'package:huoo/models/artist.dart';
 import 'package:huoo/widgets/common/song_tile.dart';
+import 'package:huoo/services/api_service.dart';
 
 class SearchResultItems {
-  /// Build a song item using SongTile component
   static Widget buildSongItem({
     required BuildContext context,
     required Map<String, dynamic> songData,
@@ -25,7 +25,6 @@ class SearchResultItems {
     );
   }
 
-  /// Build an artist item tile
   static Widget buildArtistItem({
     required BuildContext context,
     required Map<String, dynamic> artistData,
@@ -41,7 +40,7 @@ class SearchResultItems {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF1DB954).withOpacity(0.2),
+          backgroundColor: const Color(0xFF1DB954).withValues(alpha: 0.2),
           child: const Icon(Icons.person, color: Color(0xFF1DB954)),
         ),
         title: Text(
@@ -63,7 +62,6 @@ class SearchResultItems {
     );
   }
 
-  /// Build an album card
   static Widget buildAlbumCard({
     required BuildContext context,
     required Map<String, dynamic> albumData,
@@ -87,7 +85,7 @@ class SearchResultItems {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1DB954).withOpacity(0.2),
+                  color: const Color(0xFF1DB954).withValues(alpha: 0.2),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -151,11 +149,10 @@ class SearchResultItems {
     );
   }
 
-  // Helper methods to convert API data to models
   static Song convertToSongModel(Map<String, dynamic> songData) {
     return Song(
       id: songData['id']?.hashCode ?? 0,
-      path: songData['file_path'] ?? '',
+      path: ApiConfig.baseUrl + (songData['file_path'] ?? ''),
       title: songData['title'] ?? 'Unknown Title',
       cover: null,
       duration: Duration(seconds: songData['duration'] ?? 0),
@@ -165,6 +162,7 @@ class SearchResultItems {
       totalDisc: 1,
       year: songData['year'],
       genres: songData['genre'] != null ? [songData['genre']] : [],
+      source: AudioSourceEnum.api,
     );
   }
 
