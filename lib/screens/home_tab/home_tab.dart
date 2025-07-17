@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/screens/settings_screen.dart';
-import 'package:huoo/services/api_service.dart';
+import 'package:huoo/services/home_api_service.dart';
 import 'package:logger/logger.dart';
 
 final Logger log = Logger();
@@ -13,7 +13,7 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  final ApiService _apiService = ApiService();
+  final HomeApiService _homeApiService = HomeApiService();
 
   Map<String, dynamic>? _homeData;
   List<dynamic> _continueListening = [];
@@ -36,7 +36,7 @@ class _HomeTabState extends State<HomeTab> {
       });
 
       // Load all home screen data in a single request - much more efficient!
-      final homeData = await _apiService.getHomeScreenData();
+      final homeData = await _homeApiService.getHomeScreenData();
 
       setState(() {
         _homeData = homeData;

@@ -66,6 +66,23 @@ class ApiService {
     return headers;
   }
 
+  // Public method for specialized services to make HTTP requests
+  Future<Map<String, dynamic>> makeRequest({
+    required String method,
+    required String endpoint,
+    Map<String, dynamic>? body,
+    bool requireAuth = true,
+    Map<String, String>? queryParams,
+  }) async {
+    return await _makeRequest(
+      method: method,
+      endpoint: endpoint,
+      body: body,
+      requireAuth: requireAuth,
+      queryParams: queryParams,
+    );
+  }
+
   Future<Map<String, dynamic>> _makeRequest({
     required String method,
     required String endpoint,
@@ -168,238 +185,5 @@ class ApiService {
         );
       }
     }
-  }
-
-  // ============ USER ENDPOINTS ============
-
-  Future<Map<String, dynamic>> getUserProfile() async {
-    return await _makeRequest(method: 'GET', endpoint: '/users/me');
-  }
-
-  Future<Map<String, dynamic>> updateUserProfile({
-    String? displayName,
-    String? photoUrl,
-  }) async {
-    final body = <String, dynamic>{};
-    if (displayName != null) body['display_name'] = displayName;
-    if (photoUrl != null) body['photo_url'] = photoUrl;
-
-    return await _makeRequest(method: 'PUT', endpoint: '/users/me', body: body);
-  }
-
-  // ============ MUSIC ENDPOINTS ============
-
-  Future<Map<String, dynamic>> getMusicLibrary({
-    int page = 1,
-    int limit = 50,
-    String? search,
-    String? genre,
-    String? artist,
-  }) async {
-    final queryParams = <String, String>{
-      'page': page.toString(),
-      'limit': limit.toString(),
-    };
-
-    if (search != null) queryParams['search'] = search;
-    if (genre != null) queryParams['genre'] = genre;
-    if (artist != null) queryParams['artist'] = artist;
-
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/music/library',
-      queryParams: queryParams,
-    );
-  }
-
-  Future<Map<String, dynamic>> uploadMusicMetadata({
-    required String title,
-    required String filePath,
-    String? artist,
-    String? album,
-    String? genre,
-    int? duration,
-  }) async {
-    final body = {
-      'title': title,
-      'file_path': filePath,
-      if (artist != null) 'artist': artist,
-      if (album != null) 'album': album,
-      if (genre != null) 'genre': genre,
-      if (duration != null) 'duration': duration,
-    };
-
-    return await _makeRequest(
-      method: 'POST',
-      endpoint: '/music/upload',
-      body: body,
-    );
-  }
-
-  Future<Map<String, dynamic>> getMusicFile(String musicId) async {
-    return await _makeRequest(method: 'GET', endpoint: '/music/$musicId');
-  }
-
-  Future<Map<String, dynamic>> deleteMusicFile(String musicId) async {
-    return await _makeRequest(method: 'DELETE', endpoint: '/music/$musicId');
-  }
-
-  Future<Map<String, dynamic>> searchMusic({
-    required String query,
-    int page = 1,
-    int limit = 20,
-    String? searchType, // 'all', 'songs', 'artists', 'albums'
-  }) async {
-    final queryParams = <String, String>{
-      'q': query,
-      'page': page.toString(),
-      'limit': limit.toString(),
-    };
-
-    if (searchType != null) queryParams['type'] = searchType;
-
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/search',
-      queryParams: queryParams,
-    );
-  }
-
-  Future<Map<String, dynamic>> getSearchSuggestions({
-    required String query,
-    int limit = 10,
-  }) async {
-    final queryParams = <String, String>{'q': query, 'limit': limit.toString()};
-
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/search/suggestions',
-      queryParams: queryParams,
-    );
-  }
-
-  Future<Map<String, dynamic>> getTrendingSearches({int limit = 10}) async {
-    final queryParams = <String, String>{'limit': limit.toString()};
-
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/search/trending',
-      queryParams: queryParams,
-    );
-  }
-
-  // ============ PLAYLIST ENDPOINTS ============
-
-  Future<Map<String, dynamic>> getPlaylists() async {
-    return await _makeRequest(method: 'GET', endpoint: '/playlists');
-  }
-
-  Future<Map<String, dynamic>> createPlaylist({
-    required String name,
-    String? description,
-  }) async {
-    final body = {
-      'name': name,
-      if (description != null) 'description': description,
-    };
-
-    return await _makeRequest(
-      method: 'POST',
-      endpoint: '/playlists',
-      body: body,
-    );
-  }
-
-  Future<Map<String, dynamic>> addToPlaylist({
-    required String playlistId,
-    required String musicId,
-  }) async {
-    return await _makeRequest(
-      method: 'POST',
-      endpoint: '/playlists/$playlistId/songs/$musicId',
-    );
-  }
-
-  Future<Map<String, dynamic>> removeFromPlaylist({
-    required String playlistId,
-    required String musicId,
-  }) async {
-    return await _makeRequest(
-      method: 'DELETE',
-      endpoint: '/playlists/$playlistId/songs/$musicId',
-    );
-  }
-
-  // ============ HOME ENDPOINTS ============
-
-  Future<Map<String, dynamic>> getHomeScreenData() async {
-    return await _makeRequest(method: 'GET', endpoint: '/home');
-  }
-
-  Future<List<dynamic>> getContinueListening({int limit = 6}) async {
-    final result = await _makeRequest(
-      method: 'GET',
-      endpoint: '/home/continue-listening',
-      queryParams: {'limit': limit.toString()},
-    );
-
-    // API now returns {items: [...], total_count: N}
-    if (result['items'] is List) {
-      return result['items'];
-    }
-
-    log.w('Expected items List but got ${result.runtimeType}: $result');
-    return <dynamic>[];
-  }
-
-  Future<List<dynamic>> getTopMixes({int limit = 4}) async {
-    final result = await _makeRequest(
-      method: 'GET',
-      endpoint: '/home/top-mixes',
-      queryParams: {'limit': limit.toString()},
-    );
-
-    // API now returns {items: [...], total_count: N}
-    if (result['items'] is List) {
-      return result['items'];
-    }
-
-    log.w('Expected items List but got ${result.runtimeType}: $result');
-    return <dynamic>[];
-  }
-
-  Future<List<dynamic>> getRecentListening({int limit = 6}) async {
-    final result = await _makeRequest(
-      method: 'GET',
-      endpoint: '/home/recent-listening',
-      queryParams: {'limit': limit.toString()},
-    );
-
-    // API now returns {items: [...], total_count: N}
-    if (result['items'] is List) {
-      return result['items'];
-    }
-
-    log.w('Expected items List but got ${result.runtimeType}: $result');
-    return <dynamic>[];
-  }
-
-  Future<Map<String, dynamic>> getUserStats() async {
-    return await _makeRequest(method: 'GET', endpoint: '/home/stats');
-  }
-
-  Future<Map<String, dynamic>> healthCheck() async {
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/health',
-      requireAuth: false,
-    );
-  }
-
-  Future<Map<String, dynamic>> testProtectedEndpoint() async {
-    return await _makeRequest(
-      method: 'GET',
-      endpoint: '/users/protected-resource',
-    );
   }
 }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:huoo/repositories/user_repository.dart';
-import 'package:huoo/services/api_service.dart';
+import 'package:huoo/services/user_api_service.dart';
+import 'package:huoo/services/search_api_service.dart';
+import 'package:huoo/services/home_api_service.dart';
+import 'package:huoo/services/api_service.dart'; // For ApiConfig
 
 class ApiTestScreen extends StatefulWidget {
   const ApiTestScreen({super.key});
@@ -11,7 +14,9 @@ class ApiTestScreen extends StatefulWidget {
 
 class _ApiTestScreenState extends State<ApiTestScreen> {
   final UserRepository _userRepository = UserRepository();
-  final ApiService _apiService = ApiService();
+  final UserApiService _userApiService = UserApiService();
+  final SearchApiService _searchApiService = SearchApiService();
+  final HomeApiService _homeApiService = HomeApiService();
 
   String _output = '';
   bool _isLoading = false;
@@ -47,7 +52,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
 
     try {
       _addOutput('Testing protected endpoint...');
-      final result = await _apiService.testProtectedEndpoint();
+      final result = await _userApiService.testProtectedEndpoint();
       _addOutput('Protected endpoint success: ${result.toString()}');
     } catch (e) {
       _addOutput('Protected endpoint error: $e');
@@ -91,7 +96,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
 
     try {
       _addOutput('Testing search endpoint...');
-      final result = await _apiService.searchMusic(
+      final result = await _searchApiService.searchMusic(
         query: 'test',
         page: 1,
         limit: 5,
@@ -128,7 +133,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       _addOutput('--- Testing Single Endpoint (Optimized) ---');
       final stopwatchSingle = Stopwatch()..start();
 
-      final homeData = await _apiService.getHomeScreenData();
+      final homeData = await _homeApiService.getHomeScreenData();
       stopwatchSingle.stop();
 
       _addOutput(
@@ -152,16 +157,16 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       final stopwatchMultiple = Stopwatch()..start();
 
       // Test individual endpoints for comparison
-      final continueListening = await _apiService.getContinueListening();
+      final continueListening = await _homeApiService.getContinueListening();
       _addOutput('Continue listening: ${continueListening.length} items');
 
-      final topMixes = await _apiService.getTopMixes();
+      final topMixes = await _homeApiService.getTopMixes();
       _addOutput('Top mixes: ${topMixes.length} items');
 
-      final recentListening = await _apiService.getRecentListening();
+      final recentListening = await _homeApiService.getRecentListening();
       _addOutput('Recent listening: ${recentListening.length} items');
 
-      final userStats = await _apiService.getUserStats();
+      final userStats = await _homeApiService.getUserStats();
       _addOutput(
         'User stats - Songs: ${userStats['total_songs']}, Artists: ${userStats['total_artists']}',
       );
