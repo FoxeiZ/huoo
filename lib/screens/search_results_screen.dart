@@ -206,7 +206,9 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => _onFilterChanged(value),
-      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      selectedColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.2),
       checkmarkColor: Theme.of(context).colorScheme.primary,
     );
   }

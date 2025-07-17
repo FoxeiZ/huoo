@@ -6,7 +6,6 @@ import '../../screens/main_player.dart';
 
 /// Utility class for common library actions across widgets
 class LibraryActionUtils {
-  /// Shows a snackbar with the given message
   static void showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -17,12 +16,10 @@ class LibraryActionUtils {
     );
   }
 
-  /// Plays a single song
   static void playSong(BuildContext context, Song song) {
     playSongs(context, [song]);
   }
 
-  /// Plays a list of songs starting from the specified index
   static void playSongs(
     BuildContext context,
     List<Song> songs, [
@@ -43,13 +40,11 @@ class LibraryActionUtils {
     ).push(MaterialPageRoute(builder: (context) => const MainPlayer()));
   }
 
-  /// Adds a single song to queue
   static void addSongToQueue(BuildContext context, Song song) {
     context.read<AudioPlayerBloc>().add(AudioPlayerAddSongEvent(song));
     showSnackBar(context, 'Added "${song.title}" to queue');
   }
 
-  /// Adds multiple songs to queue
   static void addSongsToQueue(BuildContext context, List<Song> songs) {
     if (songs.isEmpty) return;
 
@@ -57,7 +52,6 @@ class LibraryActionUtils {
     showSnackBar(context, 'Added ${songs.length} songs to queue');
   }
 
-  /// Shuffles and plays songs
   static void shufflePlay(BuildContext context, List<Song> songs) {
     if (songs.isEmpty) return;
 
@@ -65,7 +59,6 @@ class LibraryActionUtils {
     playSongs(context, shuffledSongs);
   }
 
-  /// Alternative shuffle play implementation (using clear playlist)
   static void shufflePlayWithClear(BuildContext context, List<Song> songs) {
     if (songs.isEmpty) return;
 

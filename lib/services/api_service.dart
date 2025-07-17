@@ -15,7 +15,6 @@ class ApiConfig {
   static const Duration timeout = Duration(seconds: 30);
 }
 
-/// Exception class for API errors
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
@@ -35,7 +34,6 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  /// Get the current Firebase user token
   Future<String> _getToken() async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -52,7 +50,6 @@ class ApiService {
     }
   }
 
-  /// Create HTTP headers with authentication token
   Future<Map<String, String>> _getHeaders({bool includeAuth = true}) async {
     final headers = {'Content-Type': 'application/json'};
 
@@ -128,7 +125,6 @@ class ApiService {
     }
   }
 
-  /// Handle HTTP response and parse JSON
   Map<String, dynamic> _handleResponse(http.Response response) {
     final statusCode = response.statusCode;
 
@@ -176,12 +172,10 @@ class ApiService {
 
   // ============ USER ENDPOINTS ============
 
-  /// Get the current user's profile
   Future<Map<String, dynamic>> getUserProfile() async {
     return await _makeRequest(method: 'GET', endpoint: '/users/me');
   }
 
-  /// Update user profile
   Future<Map<String, dynamic>> updateUserProfile({
     String? displayName,
     String? photoUrl,
@@ -195,7 +189,6 @@ class ApiService {
 
   // ============ MUSIC ENDPOINTS ============
 
-  /// Get user's music library
   Future<Map<String, dynamic>> getMusicLibrary({
     int page = 1,
     int limit = 50,
@@ -219,7 +212,6 @@ class ApiService {
     );
   }
 
-  /// Upload music metadata
   Future<Map<String, dynamic>> uploadMusicMetadata({
     required String title,
     required String filePath,
@@ -244,17 +236,14 @@ class ApiService {
     );
   }
 
-  /// Get music file by ID
   Future<Map<String, dynamic>> getMusicFile(String musicId) async {
     return await _makeRequest(method: 'GET', endpoint: '/music/$musicId');
   }
 
-  /// Delete music file
   Future<Map<String, dynamic>> deleteMusicFile(String musicId) async {
     return await _makeRequest(method: 'DELETE', endpoint: '/music/$musicId');
   }
 
-  /// Search for music
   Future<Map<String, dynamic>> searchMusic({
     required String query,
     int page = 1,
@@ -276,7 +265,6 @@ class ApiService {
     );
   }
 
-  /// Get search suggestions
   Future<Map<String, dynamic>> getSearchSuggestions({
     required String query,
     int limit = 10,
@@ -290,7 +278,6 @@ class ApiService {
     );
   }
 
-  /// Get trending searches
   Future<Map<String, dynamic>> getTrendingSearches({int limit = 10}) async {
     final queryParams = <String, String>{'limit': limit.toString()};
 
@@ -303,12 +290,10 @@ class ApiService {
 
   // ============ PLAYLIST ENDPOINTS ============
 
-  /// Get user's playlists
   Future<Map<String, dynamic>> getPlaylists() async {
     return await _makeRequest(method: 'GET', endpoint: '/playlists');
   }
 
-  /// Create a new playlist
   Future<Map<String, dynamic>> createPlaylist({
     required String name,
     String? description,
@@ -325,7 +310,6 @@ class ApiService {
     );
   }
 
-  /// Add song to playlist
   Future<Map<String, dynamic>> addToPlaylist({
     required String playlistId,
     required String musicId,
@@ -336,7 +320,6 @@ class ApiService {
     );
   }
 
-  /// Remove song from playlist
   Future<Map<String, dynamic>> removeFromPlaylist({
     required String playlistId,
     required String musicId,
@@ -349,12 +332,10 @@ class ApiService {
 
   // ============ HOME ENDPOINTS ============
 
-  /// Get home screen data
   Future<Map<String, dynamic>> getHomeScreenData() async {
     return await _makeRequest(method: 'GET', endpoint: '/home');
   }
 
-  /// Get continue listening items
   Future<List<dynamic>> getContinueListening({int limit = 6}) async {
     final result = await _makeRequest(
       method: 'GET',
@@ -371,7 +352,6 @@ class ApiService {
     return <dynamic>[];
   }
 
-  /// Get top mixes
   Future<List<dynamic>> getTopMixes({int limit = 4}) async {
     final result = await _makeRequest(
       method: 'GET',
@@ -388,7 +368,6 @@ class ApiService {
     return <dynamic>[];
   }
 
-  /// Get recent listening
   Future<List<dynamic>> getRecentListening({int limit = 6}) async {
     final result = await _makeRequest(
       method: 'GET',
@@ -405,12 +384,10 @@ class ApiService {
     return <dynamic>[];
   }
 
-  /// Get user stats
   Future<Map<String, dynamic>> getUserStats() async {
     return await _makeRequest(method: 'GET', endpoint: '/home/stats');
   }
 
-  /// Health check
   Future<Map<String, dynamic>> healthCheck() async {
     return await _makeRequest(
       method: 'GET',
@@ -419,7 +396,6 @@ class ApiService {
     );
   }
 
-  /// Test protected endpoint
   Future<Map<String, dynamic>> testProtectedEndpoint() async {
     return await _makeRequest(
       method: 'GET',
