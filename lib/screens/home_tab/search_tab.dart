@@ -13,9 +13,9 @@ class SearchTab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color.fromRGBO(134, 200, 194, 1).withValues(alpha: 0.6),
-              const Color(0xFF7BEEFF).withValues(alpha: 0.4),
-              Colors.grey.shade900,
+              const Color.fromRGBO(134, 200, 194, 1).withValues(alpha: 0.2),
+              const Color(0xFF7BEEFF).withValues(alpha: 0.15),
+              Colors.grey.shade900.withValues(alpha: 0.9),
             ],
             stops: const [0.0, 0.25, 0.5],
           ),

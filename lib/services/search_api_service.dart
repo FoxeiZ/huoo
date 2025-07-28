@@ -1,5 +1,6 @@
 import 'package:logger/logger.dart';
 import 'package:huoo/services/api_service.dart';
+import 'package:huoo/models/api/api_models.dart';
 
 final Logger _logger = Logger(
   printer: SimplePrinter(),
@@ -16,7 +17,7 @@ class SearchApiService {
   factory SearchApiService() => _instance;
   SearchApiService._internal();
 
-  Future<Map<String, dynamic>> searchMusic({
+  Future<SearchResponse> searchMusic({
     required String query,
     int page = 1,
     int limit = 20,
@@ -31,18 +32,31 @@ class SearchApiService {
 
       if (searchType != null) queryParams['type'] = searchType;
 
-      return await _apiService.makeRequest(
-        method: 'GET',
-        endpoint: '/search',
-        queryParams: queryParams,
+      final response = await _apiService
+          .makeRequest(
+            method: 'GET',
+            endpoint: '/search',
+            queryParams: queryParams,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('Search request timed out. Please try again.');
+            },
+          );
+
+      return SearchResponse.fromJson(response);
+    } catch (e, stackTrace) {
+      _logger.e(
+        'Failed to search music with query "$query": $e',
+        error: e,
+        stackTrace: stackTrace,
       );
-    } catch (e) {
-      _logger.e('Failed to search music with query "$query": $e');
       rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> getSearchSuggestions({
+  Future<SearchSuggestionsResponse> getSearchSuggestions({
     required String query,
     int limit = 10,
   }) async {
@@ -52,11 +66,13 @@ class SearchApiService {
         'limit': limit.toString(),
       };
 
-      return await _apiService.makeRequest(
+      final response = await _apiService.makeRequest(
         method: 'GET',
         endpoint: '/search/suggestions',
         queryParams: queryParams,
       );
+
+      return SearchSuggestionsResponse.fromJson(response);
     } catch (e) {
       _logger.e('Failed to get search suggestions for "$query": $e');
       rethrow;

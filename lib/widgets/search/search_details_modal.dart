@@ -88,134 +88,134 @@ class SearchDetailsModal extends StatelessWidget {
     );
   }
 
-  static void showAlbumDetails(
-    BuildContext context, {
-    required String title,
-    required String artist,
-    String? year,
-    VoidCallback? onPlay,
-    VoidCallback? onShuffle,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder:
-          (context) => SearchDetailsModal(
-            leadingWidget: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1DB954).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.album,
-                color: Color(0xFF1DB954),
-                size: 32,
-              ),
-            ),
-            title: title,
-            subtitle: artist,
-            additionalInfo: year,
-            actionButtons: [
-              if (onPlay != null)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onPlay();
-                  },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Play'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1DB954),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              if (onPlay != null && onShuffle != null)
-                const SizedBox(width: 12),
-              if (onShuffle != null)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onShuffle();
-                  },
-                  icon: const Icon(Icons.shuffle),
-                  label: const Text('Shuffle'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
-                  ),
-                ),
-            ],
-            placeholderText: 'Album details from search results',
-          ),
-    );
-  }
+  // static void showAlbumDetails(
+  //   BuildContext context, {
+  //   required String title,
+  //   required String artist,
+  //   String? year,
+  //   VoidCallback? onPlay,
+  //   VoidCallback? onShuffle,
+  // }) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: const Color(0xFF1A1A1A),
+  //     isScrollControlled: true,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  //     ),
+  //     builder:
+  //         (context) => SearchDetailsModal(
+  //           leadingWidget: Container(
+  //             width: 80,
+  //             height: 80,
+  //             decoration: BoxDecoration(
+  //               color: const Color(0xFF1DB954).withValues(alpha: 0.2),
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //             child: const Icon(
+  //               Icons.album,
+  //               color: Color(0xFF1DB954),
+  //               size: 32,
+  //             ),
+  //           ),
+  //           title: title,
+  //           subtitle: artist,
+  //           additionalInfo: year,
+  //           actionButtons: [
+  //             if (onPlay != null)
+  //               ElevatedButton.icon(
+  //                 onPressed: () {
+  //                   Navigator.pop(context);
+  //                   onPlay();
+  //                 },
+  //                 icon: const Icon(Icons.play_arrow),
+  //                 label: const Text('Play'),
+  //                 style: ElevatedButton.styleFrom(
+  //                   backgroundColor: const Color(0xFF1DB954),
+  //                   foregroundColor: Colors.white,
+  //                 ),
+  //               ),
+  //             if (onPlay != null && onShuffle != null)
+  //               const SizedBox(width: 12),
+  //             if (onShuffle != null)
+  //               OutlinedButton.icon(
+  //                 onPressed: () {
+  //                   Navigator.pop(context);
+  //                   onShuffle();
+  //                 },
+  //                 icon: const Icon(Icons.shuffle),
+  //                 label: const Text('Shuffle'),
+  //                 style: OutlinedButton.styleFrom(
+  //                   foregroundColor: Colors.white,
+  //                   side: const BorderSide(color: Colors.white54),
+  //                 ),
+  //               ),
+  //           ],
+  //           placeholderText: 'Album details from search results',
+  //         ),
+  //   );
+  // }
 
-  static void showArtistDetails(
-    BuildContext context, {
-    required String name,
-    int? songCount,
-    int? albumCount,
-    VoidCallback? onPlayAll,
-    VoidCallback? onShuffleAll,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder:
-          (context) => SearchDetailsModal(
-            leadingWidget: CircleAvatar(
-              radius: 40,
-              backgroundColor: const Color(0xFF1DB954).withValues(alpha: 0.2),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF1DB954),
-                size: 32,
-              ),
-            ),
-            title: name,
-            subtitle: '${songCount ?? 0} songs • ${albumCount ?? 0} albums',
-            actionButtons: [
-              if (onPlayAll != null)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onPlayAll();
-                  },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Play All'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1DB954),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              if (onPlayAll != null && onShuffleAll != null)
-                const SizedBox(width: 12),
-              if (onShuffleAll != null)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onShuffleAll();
-                  },
-                  icon: const Icon(Icons.shuffle),
-                  label: const Text('Shuffle'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
-                  ),
-                ),
-            ],
-            placeholderText: 'Artist details from search results',
-          ),
-    );
-  }
+  // static void showArtistDetails(
+  //   BuildContext context, {
+  //   required String name,
+  //   int? songCount,
+  //   int? albumCount,
+  //   VoidCallback? onPlayAll,
+  //   VoidCallback? onShuffleAll,
+  // }) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: const Color(0xFF1A1A1A),
+  //     isScrollControlled: true,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  //     ),
+  //     builder:
+  //         (context) => SearchDetailsModal(
+  //           leadingWidget: CircleAvatar(
+  //             radius: 40,
+  //             backgroundColor: const Color(0xFF1DB954).withValues(alpha: 0.2),
+  //             child: const Icon(
+  //               Icons.person,
+  //               color: Color(0xFF1DB954),
+  //               size: 32,
+  //             ),
+  //           ),
+  //           title: name,
+  //           subtitle: '${songCount ?? 0} songs • ${albumCount ?? 0} albums',
+  //           actionButtons: [
+  //             if (onPlayAll != null)
+  //               ElevatedButton.icon(
+  //                 onPressed: () {
+  //                   Navigator.pop(context);
+  //                   onPlayAll();
+  //                 },
+  //                 icon: const Icon(Icons.play_arrow),
+  //                 label: const Text('Play All'),
+  //                 style: ElevatedButton.styleFrom(
+  //                   backgroundColor: const Color(0xFF1DB954),
+  //                   foregroundColor: Colors.white,
+  //                 ),
+  //               ),
+  //             if (onPlayAll != null && onShuffleAll != null)
+  //               const SizedBox(width: 12),
+  //             if (onShuffleAll != null)
+  //               OutlinedButton.icon(
+  //                 onPressed: () {
+  //                   Navigator.pop(context);
+  //                   onShuffleAll();
+  //                 },
+  //                 icon: const Icon(Icons.shuffle),
+  //                 label: const Text('Shuffle'),
+  //                 style: OutlinedButton.styleFrom(
+  //                   foregroundColor: Colors.white,
+  //                   side: const BorderSide(color: Colors.white54),
+  //                 ),
+  //               ),
+  //           ],
+  //           placeholderText: 'Artist details from search results',
+  //         ),
+  //   );
+  // }
 }

@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:huoo/bloc/auth_bloc.dart';
+import 'package:huoo/screens/profile_screen.dart';
 import 'package:huoo/screens/settings_screen.dart';
+import 'package:huoo/services/auth_service.dart';
 import 'package:huoo/services/home_api_service.dart';
+import 'package:huoo/models/api/api_models.dart';
+import 'package:huoo/models/song.dart';
+import 'package:huoo/models/artist.dart';
+import 'package:huoo/widgets/library/library_action_utils.dart';
 import 'package:logger/logger.dart';
+import 'package:huoo/widgets/library/user_listening_history_screen.dart';
+import 'package:huoo/widgets/library/library_details_modal.dart';
 
 final Logger log = Logger();
 
@@ -15,10 +26,11 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   final HomeApiService _homeApiService = HomeApiService();
 
-  Map<String, dynamic>? _homeData;
-  List<dynamic> _continueListening = [];
-  List<dynamic> _topMixes = [];
-  List<dynamic> _recentListening = [];
+  HomeScreenData? _homeData;
+  List<ContinueListeningItem> _continueListening = [];
+  List<TopMixItem> _topMixes = [];
+  List<RecentListeningItem> _recentListening = [];
+  List<SongResponse> _recommendedSongs = [];
   bool _isLoading = true;
   String _errorMessage = '';
 
@@ -35,15 +47,26 @@ class _HomeTabState extends State<HomeTab> {
         _errorMessage = '';
       });
 
-      // Load all home screen data in a single request - much more efficient!
       final homeData = await _homeApiService.getHomeScreenData();
+
+      final recommendedSongsResponse = await _homeApiService
+          .getRecommendedSongs(limit: 10);
 
       setState(() {
         _homeData = homeData;
-        // Extract the individual lists from the home data response
-        _continueListening = homeData['continue_listening'] ?? [];
-        _topMixes = homeData['top_mixes'] ?? [];
-        _recentListening = homeData['recent_listening'] ?? [];
+
+        _continueListening = homeData.continueListening;
+        _topMixes = homeData.topMixes;
+        _recentListening = homeData.recentListening;
+
+        _recommendedSongs =
+            recommendedSongsResponse.songs
+                .map(
+                  (songData) =>
+                      SongResponse.fromJson(songData as Map<String, dynamic>),
+                )
+                .toList();
+
         _isLoading = false;
       });
     } catch (e, stackTrace) {
@@ -65,7 +88,6 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     try {
-      // Remove # if present and convert hex to Color
       final hexColor = colorString.replaceAll('#', '');
       return Color(int.parse('FF$hexColor', radix: 16));
     } catch (e) {
@@ -134,8 +156,8 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildAppBar() {
-    final greetingMessage = _homeData?['greeting_message'] ?? 'Welcome back!';
-    final displayName = _homeData?['user_display_name'] ?? 'Music Lover';
+    final greetingMessage = _homeData?.greetingMessage ?? 'Welcome back!';
+    final displayName = _homeData?.userDisplayName ?? 'Music Lover';
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -144,7 +166,23 @@ class _HomeTabState extends State<HomeTab> {
           CircleAvatar(
             radius: 20,
             backgroundColor: const Color.fromRGBO(134, 200, 194, 1),
-            child: const Icon(Icons.person, color: Colors.white, size: 24),
+            child: IconButton(
+              icon: const Icon(Icons.person, color: Colors.white, size: 24),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (context) => BlocProvider(
+                          create:
+                              (context) =>
+                                  AuthBloc(authService: AuthService())
+                                    ..add(AppStarted()),
+                          child: const ProfileScreen(),
+                        ),
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -168,7 +206,13 @@ class _HomeTabState extends State<HomeTab> {
           ),
           IconButton(
             icon: const Icon(Icons.bar_chart, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ListeningHistoryScreen(),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
@@ -199,7 +243,9 @@ class _HomeTabState extends State<HomeTab> {
           _buildTopMixesSection(),
           const SizedBox(height: 32),
           _buildRecentListeningSection(),
-          const SizedBox(height: 100), // Bottom padding for navigation
+          const SizedBox(height: 32),
+          _buildRecommendedSongsSection(),
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -228,10 +274,10 @@ class _HomeTabState extends State<HomeTab> {
           children:
               _continueListening.map((item) {
                 return _buildContinueListeningItem(
-                  item['title'] ?? 'Unknown',
-                  _parseColor(item['color']),
-                  isReleased: item['is_new_release'] ?? false,
-                  progress: (item['progress_percentage'] ?? 0.0).toDouble(),
+                  item.title,
+                  _parseColor(item.color),
+                  isReleased: item.isNewRelease,
+                  progress: item.progressPercentage,
                 );
               }).toList(),
         ),
@@ -260,12 +306,7 @@ class _HomeTabState extends State<HomeTab> {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final mix = _topMixes[index];
-              return _buildTopMixItem(
-                mix['title'] ?? 'Unknown Mix',
-                _parseColor(mix['color']),
-                description: mix['description'],
-                songCount: mix['song_count'] ?? 0,
-              );
+              return _buildTopMixItem(mix);
             },
           ),
         ),
@@ -287,18 +328,14 @@ class _HomeTabState extends State<HomeTab> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 160,
+          height: 200,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _recentListening.length,
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final item = _recentListening[index];
-              return _buildRecentItem(
-                _parseColor(item['color']),
-                title: item['title'],
-                artist: item['artist'],
-              );
+              return _buildRecentListeningItem(item);
             },
           ),
         ),
@@ -395,12 +432,151 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildTopMixItem(
-    String title,
-    Color accentColor, {
-    String? description,
-    int? songCount,
-  }) {
+  Song _convertSongResponseToSong(SongResponse songResponseModel) {
+    final artists =
+        songResponseModel.artistNames
+            .map((name) => Artist(name: name))
+            .toList();
+
+    return Song(
+      id: null,
+      apiId: songResponseModel.id,
+      path: songResponseModel.path,
+      source: AudioSourceEnum.api,
+      cover: songResponseModel.cover,
+      albumId: null,
+      year: songResponseModel.year,
+      title: songResponseModel.title,
+      trackNumber: songResponseModel.trackNumber,
+      trackTotal: songResponseModel.trackTotal,
+      duration:
+          songResponseModel.duration != null
+              ? Duration(seconds: songResponseModel.duration!)
+              : const Duration(seconds: 0),
+      genres: songResponseModel.genres,
+      discNumber: songResponseModel.discNumber,
+      totalDisc: songResponseModel.totalDisc,
+      lyrics: songResponseModel.lyrics,
+      rating: songResponseModel.rating,
+      playCount: songResponseModel.playCount,
+      dateAdded:
+          songResponseModel.createdAt != null
+              ? DateTime.tryParse(songResponseModel.createdAt!)
+              : null,
+      lastPlayed: null,
+      artists: artists,
+      album: null,
+    );
+  }
+
+  Widget _buildTopMixItem(TopMixItem item) {
+    return SizedBox(
+      width: 140,
+      child: GestureDetector(
+        onTap: () {
+          LibraryDetailsModal.showDetailsGeneric(
+            context,
+            item.title,
+            item.songs.map((song) => _convertSongResponseToSong(song)).toList(),
+            onSongTap:
+                (songs, index) =>
+                    LibraryActionUtils.playSongs(context, songs, index),
+            onSongPlay: (song) => LibraryActionUtils.playSong(context, song),
+            onSongQueue:
+                (song) => LibraryActionUtils.addSongToQueue(context, song),
+            onPlayAll: (songs) => LibraryActionUtils.playSongs(context, songs),
+            onShuffle:
+                (songs) => LibraryActionUtils.shufflePlay(context, songs),
+            imageUrl: item.imageUrl,
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: 140,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade800,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: Icon(
+                        Icons.music_note,
+                        color: Colors.white54,
+                        size: 40,
+                      ),
+                    ),
+                    if (item.songCount > 0)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${item.songCount} songs',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _parseColor(item.color),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(8),
+                            bottomRight: Radius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              item.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (item.description != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                item.description!,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentListeningItem(RecentListeningItem item) {
     return SizedBox(
       width: 140,
       child: Column(
@@ -415,14 +591,200 @@ class _HomeTabState extends State<HomeTab> {
               ),
               child: Stack(
                 children: [
-                  const Positioned.fill(
-                    child: Icon(
-                      Icons.music_note,
-                      color: Colors.white54,
-                      size: 40,
+                  if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.imageUrl!,
+                        width: 140,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.music_note,
+                              color: Colors.white54,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Icon(
+                        Icons.music_note,
+                        color: Colors.white54,
+                        size: 40,
+                      ),
+                    ),
+
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          // Handle tap for recent listening item
+                          // You can add navigation or playback logic here
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.black.withValues(alpha: 0.3),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  if (songCount != null)
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.artist ?? 'Unknown Artist',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendedSongsSection() {
+    if (_recommendedSongs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Recommended for you",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 200,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recommendedSongs.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final song = _recommendedSongs[index];
+              return _buildRecommendedSongItem(song);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedSongItem(SongResponse song) {
+    return SizedBox(
+      width: 140,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: 140,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade800,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Stack(
+                children: [
+                  if (song.cover != null && song.cover!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        song.cover!,
+                        width: 140,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.music_note,
+                              color: Colors.white54,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Icon(
+                        Icons.music_note,
+                        color: Colors.white54,
+                        size: 40,
+                      ),
+                    ),
+
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          final convertedSong = _convertSongResponseToSong(
+                            song,
+                          );
+                          LibraryActionUtils.playSong(context, convertedSong);
+                        },
+                        onLongPress: () {
+                          final convertedSong = _convertSongResponseToSong(
+                            song,
+                          );
+                          LibraryActionUtils.addSongToQueue(
+                            context,
+                            convertedSong,
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.black.withValues(alpha: 0.3),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  if (song.duration != null)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -436,7 +798,7 @@ class _HomeTabState extends State<HomeTab> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '$songCount songs',
+                          _formatDuration(song.duration!),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -444,28 +806,13 @@ class _HomeTabState extends State<HomeTab> {
                         ),
                       ),
                     ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(8),
-                          bottomRight: Radius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            title,
+            song.title,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w500,
@@ -474,69 +821,23 @@ class _HomeTabState extends State<HomeTab> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          if (description != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              description,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          const SizedBox(height: 2),
+          Text(
+            song.artistNames.isNotEmpty
+                ? song.artistNames.join(', ')
+                : 'Unknown Artist',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentItem(Color color, {String? title, String? artist}) {
-    return Container(
-      width: 120,
-      height: 160,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Stack(
-        children: [
-          const Center(
-            child: Icon(Icons.album, color: Colors.white54, size: 40),
-          ),
-          if (title != null)
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (artist != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      artist,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
+  String _formatDuration(int durationInSeconds) {
+    final minutes = durationInSeconds ~/ 60;
+    final seconds = durationInSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }

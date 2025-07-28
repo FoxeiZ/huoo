@@ -42,11 +42,23 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
 
     try {
       // Load online playlists from API
-      final playlists = await _playlistService.getPlaylists();
+      final playlistsResponse = await _playlistService.getPlaylists();
 
       setState(() {
         _localPlaylists = []; // Local playlists not implemented yet
-        _onlinePlaylists = playlists;
+        _onlinePlaylists =
+            playlistsResponse.playlists
+                .map(
+                  (apiPlaylist) => Playlist.online(
+                    name: apiPlaylist.name,
+                    description: apiPlaylist.description,
+                    apiId: apiPlaylist.id,
+                    coverUrl: apiPlaylist.coverUrl,
+                    createdAt: DateTime.parse(apiPlaylist.createdAt),
+                    updatedAt: DateTime.parse(apiPlaylist.updatedAt),
+                  ),
+                )
+                .toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -63,9 +75,21 @@ class _PlaylistsListWidgetState extends State<PlaylistsListWidget>
     setState(() => _isLoadingOnline = true);
 
     try {
-      final playlists = await _playlistService.getPlaylists();
+      final playlistsResponse = await _playlistService.getPlaylists();
       setState(() {
-        _onlinePlaylists = playlists;
+        _onlinePlaylists =
+            playlistsResponse.playlists
+                .map(
+                  (apiPlaylist) => Playlist.online(
+                    name: apiPlaylist.name,
+                    description: apiPlaylist.description,
+                    apiId: apiPlaylist.id,
+                    coverUrl: apiPlaylist.coverUrl,
+                    createdAt: DateTime.parse(apiPlaylist.createdAt),
+                    updatedAt: DateTime.parse(apiPlaylist.updatedAt),
+                  ),
+                )
+                .toList();
         _isLoadingOnline = false;
       });
 

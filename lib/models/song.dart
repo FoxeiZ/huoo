@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:huoo/models/api/song_api_model.dart';
+import 'package:huoo/services/song_api_service.dart' as song_api_service;
 import 'package:image/image.dart';
 import 'package:logger/logger.dart';
 
@@ -96,6 +98,8 @@ class Song extends Equatable {
   // extra model info
   final List<Artist?> artists;
   final Album? album;
+  // api specific
+  final String? apiId;
 
   const Song({
     this.id,
@@ -118,6 +122,7 @@ class Song extends Equatable {
     this.lastPlayed,
     this.artists = const [],
     this.album,
+    this.apiId,
   });
 
   static Future<Song> _fromAudioMetadata({
@@ -338,18 +343,56 @@ class Song extends Equatable {
     };
   }
 
+  static Song _convertSongResponseToSong(SongApiModel apiModel) {
+    final artists =
+        apiModel.artistNames.map((name) => Artist(name: name)).toList();
+
+    return Song(
+      id: null,
+      apiId: apiModel.id,
+      path: apiModel.path,
+      source: AudioSourceEnum.api,
+      cover: apiModel.cover,
+      albumId: null,
+      year: apiModel.year,
+      title: apiModel.title,
+      trackNumber: apiModel.trackNumber,
+      trackTotal: apiModel.trackTotal,
+      duration:
+          apiModel.duration != null
+              ? Duration(seconds: apiModel.duration!)
+              : const Duration(seconds: 0),
+      genres: apiModel.genres,
+      discNumber: apiModel.discNumber,
+      totalDisc: apiModel.totalDisc,
+      lyrics: apiModel.lyrics,
+      rating: apiModel.rating,
+      playCount: apiModel.playCount,
+      dateAdded:
+          apiModel.createdAt != null
+              ? DateTime.tryParse(apiModel.createdAt!)
+              : null,
+      lastPlayed: null,
+      artists: artists,
+      album: null,
+    );
+  }
+
   static Future<Song?> fromMediaItem(String from, MediaItem? mediaItem) async {
     if (mediaItem == null) {
       return null;
     }
-    final helper = DatabaseHelper();
-    final id = int.tryParse(mediaItem.id) ?? -1;
+
     final isRemote = mediaItem.isLive ?? false;
     if (isRemote) {
-      return (Song.fromMap(
-        mediaItem.extras ?? {},
-      )).copyWith(id: id, source: AudioSourceEnum.api);
+      final songResponse = await song_api_service.SongApiService().getSongById(
+        mediaItem.id,
+      );
+      return _convertSongResponseToSong(songResponse);
     }
+
+    final helper = DatabaseHelper();
+    final id = int.tryParse(mediaItem.id) ?? -1;
     return await helper.songProvider.getSongWithDetails(id);
   }
 
@@ -372,7 +415,7 @@ class Song extends Equatable {
 
   Future<MediaItem> toMediaItem() async {
     return MediaItem(
-      id: id?.toString() ?? path,
+      id: id?.toString() ?? apiId ?? '',
       title: title,
       artist: artist,
       artUri: cover != null ? Uri.tryParse(cover!) : null,
@@ -380,6 +423,7 @@ class Song extends Equatable {
       genre: genres.isNotEmpty ? genres.join(', ') : null,
       album: await getAlbum().then((album) => album.title),
       extras: toMap()..remove(SongColumns.id),
+      isLive: isRemote,
     );
   }
 

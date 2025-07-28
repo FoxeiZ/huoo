@@ -1,6 +1,6 @@
 import 'package:logger/logger.dart';
 import 'package:huoo/services/api_service.dart';
-import 'package:huoo/models/playlist.dart';
+import 'package:huoo/models/api/api_models.dart';
 
 final Logger _logger = Logger(
   printer: SimplePrinter(),
@@ -18,7 +18,7 @@ class PlaylistApiService {
   PlaylistApiService._internal();
 
   // Get all user playlists
-  Future<List<Playlist>> getPlaylists() async {
+  Future<PlaylistListResponse> getPlaylists() async {
     try {
       final response = await _apiService.makeRequest(
         method: 'GET',
@@ -26,42 +26,39 @@ class PlaylistApiService {
       );
 
       // Handle the response structure from the Python API
-      if (response['status'] == 'success' && response['data'] != null) {
-        final data = response['data'];
-        final List<dynamic> playlistsJson = data['playlists'] ?? data ?? [];
-        return playlistsJson
-            .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
-            .toList();
-      }
-
-      return [];
-    } catch (e) {
-      _logger.e('Failed to fetch playlists: $e');
+      return PlaylistListResponse.fromJson(response);
+    } catch (e, stackTrace) {
+      _logger.e('Failed to fetch playlists', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
 
   // Create a new playlist
-  Future<Playlist> createPlaylist({
+  Future<PlaylistApiModel> createPlaylist({
     required String name,
     String? description,
+    String? coverUrl,
+    bool? isPublic,
   }) async {
     try {
-      final body = {
-        'name': name,
-        if (description != null && description.isNotEmpty)
-          'description': description,
-      };
+      final request = PlaylistCreateRequest(
+        name: name,
+        description: description,
+        coverUrl: coverUrl,
+        isPublic: isPublic,
+      );
 
       final response = await _apiService.makeRequest(
         method: 'POST',
         endpoint: '/playlists',
-        body: body,
+        body: request.toJson(),
       );
 
       // Handle the response structure from the Python API
       if (response['status'] == 'success' && response['data'] != null) {
-        return Playlist.fromJson(response['data'] as Map<String, dynamic>);
+        return PlaylistApiModel.fromJson(
+          response['data'] as Map<String, dynamic>,
+        );
       }
 
       throw Exception('Invalid response format');
@@ -77,12 +74,12 @@ class PlaylistApiService {
     required String musicId,
   }) async {
     try {
-      final body = {'song_id': musicId};
+      final request = AddSongToPlaylistRequest(songId: musicId);
 
       await _apiService.makeRequest(
         method: 'POST',
         endpoint: '/playlists/$playlistId/songs',
-        body: body,
+        body: request.toJson(),
       );
     } catch (e) {
       _logger.e('Failed to add song $musicId to playlist $playlistId: $e');
