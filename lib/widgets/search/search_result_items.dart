@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/models/album.dart';
 import 'package:huoo/models/artist.dart';
+import 'package:huoo/models/api/api_models.dart';
 import 'package:huoo/widgets/common/song_tile.dart';
-import 'package:huoo/services/api_service.dart';
 
 class SearchResultItems {
   static Widget buildSongItem({
     required BuildContext context,
-    required Map<String, dynamic> songData,
+    required SongSearchResult songData,
     required Function(Song) onPlay,
     required Function(Song) onQueue,
   }) {
     final song = convertToSongModel(songData);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: SongTile(
         song: song,
         onTap: () => onPlay(song),
@@ -27,13 +27,13 @@ class SearchResultItems {
 
   static Widget buildArtistItem({
     required BuildContext context,
-    required Map<String, dynamic> artistData,
+    required ArtistSearchResult artistData,
     required VoidCallback onTap,
   }) {
     final artist = convertToArtistModel(artistData);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF2A2A2A),
         borderRadius: BorderRadius.circular(8),
@@ -53,7 +53,7 @@ class SearchResultItems {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          '${artistData['song_count'] ?? 0} song${(artistData['song_count'] ?? 0) != 1 ? 's' : ''}',
+          '${artistData.songCount} song${artistData.songCount != 1 ? 's' : ''}',
           style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.white54),
@@ -64,7 +64,7 @@ class SearchResultItems {
 
   static Widget buildAlbumCard({
     required BuildContext context,
-    required Map<String, dynamic> albumData,
+    required AlbumSearchResult albumData,
     required VoidCallback onTap,
   }) {
     final album = convertToAlbumModel(albumData);
@@ -121,7 +121,7 @@ class SearchResultItems {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      albumData['artist'] ?? 'Unknown Artist',
+                      albumData.artist ?? 'Unknown Artist',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
@@ -129,10 +129,10 @@ class SearchResultItems {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (albumData['year'] != null) ...[
+                    if (albumData.year != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        albumData['year'].toString(),
+                        albumData.year.toString(),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 11,
@@ -149,39 +149,50 @@ class SearchResultItems {
     );
   }
 
-  static Song convertToSongModel(Map<String, dynamic> songData) {
+  static Song convertToSongModel(SongSearchResult songData) {
     return Song(
-      id: songData['id']?.hashCode ?? 0,
-      path: ApiConfig.baseUrl + (songData['file_path'] ?? ''),
-      title: songData['title'] ?? 'Unknown Title',
-      cover: null,
-      duration: Duration(seconds: songData['duration'] ?? 0),
-      trackNumber: songData['track_number'] ?? 1,
+      id: null,
+      apiId: songData.id,
+      path: songData.path,
+      source: AudioSourceEnum.api,
+      cover: songData.cover,
+      albumId: null,
+      year: songData.year,
+      title: songData.title,
+      trackNumber: 1,
       trackTotal: 1,
+      duration:
+          songData.duration != null
+              ? Duration(seconds: songData.duration!)
+              : const Duration(seconds: 0),
+      genres: songData.genres,
       discNumber: 1,
       totalDisc: 1,
-      year: songData['year'],
-      genres: songData['genre'] != null ? [songData['genre']] : [],
-      source: AudioSourceEnum.api,
+      artists:
+          songData.artist
+              ?.split(',')
+              .map((e) => Artist(name: e.trim()))
+              .toList() ??
+          [],
+      album: null,
     );
   }
 
-  static Artist convertToArtistModel(Map<String, dynamic> artistData) {
+  static Artist convertToArtistModel(ArtistSearchResult artistData) {
     return Artist(
-      id: artistData['id']?.hashCode ?? 0,
-      name: artistData['name'] ?? 'Unknown Artist',
+      id: artistData.id.hashCode,
+      name: artistData.name,
       imageUri: null,
       bio: null,
     );
   }
 
-  static Album convertToAlbumModel(Map<String, dynamic> albumData) {
+  static Album convertToAlbumModel(AlbumSearchResult albumData) {
     return Album(
-      id: albumData['id']?.hashCode ?? 0,
-      title: albumData['title'] ?? 'Unknown Album',
+      id: albumData.id.hashCode,
+      title: albumData.title,
       coverUri: null,
-      releaseDate:
-          albumData['year'] != null ? DateTime(albumData['year']) : null,
+      releaseDate: albumData.year != null ? DateTime(albumData.year!) : null,
     );
   }
 }

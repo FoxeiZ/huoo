@@ -3,6 +3,8 @@ import 'package:huoo/repositories/user_repository.dart';
 import 'package:huoo/services/user_api_service.dart';
 import 'package:huoo/services/search_api_service.dart';
 import 'package:huoo/services/home_api_service.dart';
+import 'package:huoo/services/song_api_service.dart';
+import 'package:huoo/services/playlist_api_service.dart';
 import 'package:huoo/services/api_service.dart'; // For ApiConfig
 
 class ApiTestScreen extends StatefulWidget {
@@ -17,6 +19,8 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   final UserApiService _userApiService = UserApiService();
   final SearchApiService _searchApiService = SearchApiService();
   final HomeApiService _homeApiService = HomeApiService();
+  final SongApiService _songApiService = SongApiService();
+  final PlaylistApiService _playlistApiService = PlaylistApiService();
 
   String _output = '';
   bool _isLoading = false;
@@ -95,23 +99,19 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     });
 
     try {
-      _addOutput('Testing search endpoint...');
+      _addOutput('Testing search endpoint with new typed models...');
       final result = await _searchApiService.searchMusic(
         query: 'test',
         page: 1,
         limit: 5,
       );
-      _addOutput('Search successful: ${result.keys.join(', ')}');
-
-      if (result['songs'] != null) {
-        _addOutput('Found ${result['songs'].length} songs');
-      }
-      if (result['artists'] != null) {
-        _addOutput('Found ${result['artists'].length} artists');
-      }
-      if (result['albums'] != null) {
-        _addOutput('Found ${result['albums'].length} albums');
-      }
+      _addOutput('Search successful with typed models!');
+      _addOutput('Query: ${result.query}');
+      _addOutput('Total results: ${result.totalResults}');
+      _addOutput('Execution time: ${result.executionTimeMs}ms');
+      _addOutput('Found ${result.songs.length} songs');
+      _addOutput('Found ${result.artists.length} artists');
+      _addOutput('Found ${result.albums.length} albums');
     } catch (e) {
       _addOutput('Search error: $e');
     }
@@ -127,7 +127,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     });
 
     try {
-      _addOutput('Testing home endpoints...');
+      _addOutput('Testing home endpoints with new typed models...');
 
       // Test single optimized endpoint (1 API call)
       _addOutput('--- Testing Single Endpoint (Optimized) ---');
@@ -139,36 +139,34 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       _addOutput(
         '✅ Single endpoint response time: ${stopwatchSingle.elapsedMilliseconds}ms',
       );
-      _addOutput('Greeting: ${homeData['greeting_message']}');
-      _addOutput('User: ${homeData['user_display_name']}');
+      _addOutput('Greeting: ${homeData.greetingMessage}');
+      _addOutput('User: ${homeData.userDisplayName}');
       _addOutput(
-        'Continue listening: ${(homeData['continue_listening'] as List).length} items',
+        'Continue listening: ${homeData.continueListening.length} items',
       );
-      _addOutput('Top mixes: ${(homeData['top_mixes'] as List).length} items');
+      _addOutput('Top mixes: ${homeData.topMixes.length} items');
+      _addOutput('Recent listening: ${homeData.recentListening.length} items');
       _addOutput(
-        'Recent listening: ${(homeData['recent_listening'] as List).length} items',
-      );
-      _addOutput(
-        'User stats - Songs: ${homeData['user_stats']['total_songs']}, Artists: ${homeData['user_stats']['total_artists']}',
+        'User stats - Songs: ${homeData.userStats.totalSongs}, Artists: ${homeData.userStats.totalArtists}',
       );
 
       _addOutput('');
-      _addOutput('--- Testing Individual Endpoints (Legacy) ---');
+      _addOutput('--- Testing Individual Endpoints (Typed Models) ---');
       final stopwatchMultiple = Stopwatch()..start();
 
       // Test individual endpoints for comparison
       final continueListening = await _homeApiService.getContinueListening();
-      _addOutput('Continue listening: ${continueListening.length} items');
+      _addOutput('Continue listening: ${continueListening.items.length} items');
 
       final topMixes = await _homeApiService.getTopMixes();
-      _addOutput('Top mixes: ${topMixes.length} items');
+      _addOutput('Top mixes: ${topMixes.items.length} items');
 
       final recentListening = await _homeApiService.getRecentListening();
-      _addOutput('Recent listening: ${recentListening.length} items');
+      _addOutput('Recent listening: ${recentListening.items.length} items');
 
       final userStats = await _homeApiService.getUserStats();
       _addOutput(
-        'User stats - Songs: ${userStats['total_songs']}, Artists: ${userStats['total_artists']}',
+        'User stats - Songs: ${userStats.totalSongs}, Artists: ${userStats.totalArtists}',
       );
 
       stopwatchMultiple.stop();
@@ -185,6 +183,14 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       _addOutput(
         '🚀 Performance improvement: $improvement% faster with single endpoint',
       );
+      ((stopwatchMultiple.elapsedMilliseconds -
+                  stopwatchSingle.elapsedMilliseconds) /
+              stopwatchMultiple.elapsedMilliseconds *
+              100)
+          .round();
+      _addOutput(
+        '🚀 Performance improvement: $improvement% faster with single endpoint',
+      );
     } catch (e) {
       _addOutput('Home endpoints error: $e');
     }
@@ -197,6 +203,113 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   void _clearOutput() {
     setState(() {
       _output = '';
+    });
+  }
+
+  Future<void> _testSongEndpoints() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      _addOutput('Testing song endpoints with new typed models...');
+
+      // Test get songs
+      final songs = await _songApiService.getSongs(limit: 5);
+      _addOutput('Get songs successful: ${songs.length} songs found');
+
+      if (songs.isNotEmpty) {
+        _addOutput(
+          'First song: ${songs.first.title} by ${songs.first.artistNames.join(', ')}',
+        );
+      }
+    } catch (e) {
+      _addOutput('Song endpoints error: $e');
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _testPlaylistEndpoints() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      _addOutput('Testing playlist endpoints with new typed models...');
+
+      // Test get playlists
+      final playlists = await _playlistApiService.getPlaylists();
+      _addOutput(
+        'Get playlists successful: ${playlists.playlists.length} playlists found (Total: ${playlists.total})',
+      );
+
+      // Test create a test playlist
+      try {
+        final newPlaylist = await _playlistApiService.createPlaylist(
+          name: 'Test Playlist ${DateTime.now().millisecondsSinceEpoch}',
+          description: 'Created by API test',
+        );
+        _addOutput('Create playlist successful: ${newPlaylist.name}');
+
+        // Test delete the playlist we just created
+        await _playlistApiService.deletePlaylist(newPlaylist.id);
+        _addOutput('Delete playlist successful');
+      } catch (e) {
+        _addOutput('Create/Delete playlist error: $e');
+      }
+    } catch (e) {
+      _addOutput('Playlist endpoints error: $e');
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _testUserEndpoints() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      _addOutput('Testing user endpoints with new typed models...');
+
+      // Test get user stats
+      final stats = await _userRepository.getUserStats();
+      if (stats != null) {
+        _addOutput(
+          'Get user stats successful - Songs: ${stats.totalSongs}, Artists: ${stats.totalArtists}',
+        );
+      } else {
+        _addOutput('Get user stats returned null');
+      }
+
+      // Test get favorite songs
+      final favorites = await _userRepository.getFavoriteSongs();
+      if (favorites != null) {
+        _addOutput(
+          'Get favorite songs successful: ${favorites.length} favorites',
+        );
+      } else {
+        _addOutput('Get favorite songs returned null');
+      }
+
+      // Test get listening history
+      final history = await _userRepository.getListeningHistory();
+      if (history != null) {
+        _addOutput('Get listening history successful: ${history.length} items');
+      } else {
+        _addOutput('Get listening history returned null');
+      }
+    } catch (e) {
+      _addOutput('User endpoints error: $e');
+    }
+
+    setState(() {
+      _isLoading = false;
     });
   }
 
@@ -251,9 +364,19 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                   label: const Text('Test Home'),
                 ),
                 ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _testHomeEndpoints,
-                  icon: const Icon(Icons.home),
-                  label: const Text('Test Home API'),
+                  onPressed: _isLoading ? null : _testSongEndpoints,
+                  icon: const Icon(Icons.music_note),
+                  label: const Text('Test Songs'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _testPlaylistEndpoints,
+                  icon: const Icon(Icons.playlist_play),
+                  label: const Text('Test Playlists'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _testUserEndpoints,
+                  icon: const Icon(Icons.account_circle),
+                  label: const Text('Test User'),
                 ),
               ],
             ),

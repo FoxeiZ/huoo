@@ -204,6 +204,38 @@ class LibraryDetailsModal extends StatelessWidget {
     );
   }
 
+  static void showDetailsGeneric(
+    BuildContext context,
+    String title,
+    List<Song> songs, {
+    required Function(List<Song>, int) onSongTap,
+    required Function(Song) onSongPlay,
+    required Function(Song) onSongQueue,
+    required Function(List<Song>) onPlayAll,
+    required Function(List<Song>) onShuffle,
+    String? imageUrl,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => LibraryDetailsModal(
+            title: title,
+            header: _buildGenericHeader(title, songs, imageUrl: imageUrl),
+            songs: songs,
+            onPlayAll: () => onPlayAll(songs),
+            onShuffle: () => onShuffle(songs),
+            onSongTap: onSongTap,
+            onSongPlay: onSongPlay,
+            onSongQueue: onSongQueue,
+          ),
+    );
+  }
+
   static Widget _buildAlbumHeader(Album album, List<Song> songs) {
     return Row(
       children: [
@@ -279,6 +311,66 @@ class LibraryDetailsModal extends StatelessWidget {
             children: [
               Text(
                 artist.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${songs.length} song${songs.length != 1 ? 's' : ''}',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _buildGenericHeader(
+    String title,
+    List<Song> songs, {
+    String? imageUrl,
+  }) {
+    return Row(
+      children: [
+        imageUrl != null
+            ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                imageUrl,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.music_note,
+                    color: Color(0xFF1DB954),
+                    size: 32,
+                  );
+                },
+              ),
+            )
+            : CircleAvatar(
+              radius: 40,
+              backgroundColor: const Color(0xFF1DB954).withValues(alpha: 0.2),
+              child: const Icon(
+                Icons.person,
+                color: Color(0xFF1DB954),
+                size: 32,
+              ),
+            ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,

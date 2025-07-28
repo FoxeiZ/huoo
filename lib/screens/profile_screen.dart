@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:huoo/bloc/auth_bloc.dart';
 import 'package:huoo/repositories/user_repository.dart';
+import 'package:huoo/models/api/api_models.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,7 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final UserRepository _userRepository = UserRepository();
-  UserProfile? _apiUserProfile;
+  UserApiModel? _apiUserProfile;
   bool _isLoadingApiProfile = false;
   String _apiError = '';
   bool _isApiConnected = false;

@@ -47,7 +47,8 @@ class PlaylistCacheService {
   // Sync online playlists from API
   Future<List<Playlist>> syncOnlinePlaylists() async {
     try {
-      final onlinePlaylists = await _apiService.getPlaylists();
+      final onlinePlaylistsResponse = await _apiService.getPlaylists();
+      final onlinePlaylists = onlinePlaylistsResponse.playlists;
 
       // Clear existing online playlists
       final existingOnline = await getCachedOnlinePlaylists();
@@ -59,7 +60,16 @@ class PlaylistCacheService {
 
       // Insert new online playlists
       final cachedPlaylists = <Playlist>[];
-      for (final playlist in onlinePlaylists) {
+      for (final playlistApi in onlinePlaylists) {
+        // Convert PlaylistApiModel to legacy Playlist model
+        final playlist = Playlist.online(
+          name: playlistApi.name,
+          description: playlistApi.description,
+          apiId: playlistApi.id,
+          coverUrl: playlistApi.coverUrl,
+          createdAt: DateTime.parse(playlistApi.createdAt),
+          updatedAt: DateTime.parse(playlistApi.updatedAt),
+        );
         final cached = await _playlistProvider.insert(playlist);
         cachedPlaylists.add(cached);
       }
@@ -103,8 +113,18 @@ class PlaylistCacheService {
         description: description,
       );
 
+      // Convert PlaylistApiModel to legacy Playlist model
+      final playlist = Playlist.online(
+        name: onlinePlaylist.name,
+        description: onlinePlaylist.description,
+        apiId: onlinePlaylist.id,
+        coverUrl: onlinePlaylist.coverUrl,
+        createdAt: DateTime.parse(onlinePlaylist.createdAt),
+        updatedAt: DateTime.parse(onlinePlaylist.updatedAt),
+      );
+
       // Cache locally
-      return await _playlistProvider.insert(onlinePlaylist);
+      return await _playlistProvider.insert(playlist);
     } catch (e) {
       _logger.e('Failed to create online playlist: $e');
       rethrow;

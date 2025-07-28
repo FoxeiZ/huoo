@@ -59,4 +59,43 @@ class UserApiService {
       rethrow;
     }
   }
+
+  /// Get detailed user statistics
+  Future<Map<String, dynamic>> getUserStats() async {
+    try {
+      return await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/users/stats',
+      );
+    } catch (e) {
+      _logger.e('Failed to get user stats: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's favorite songs
+  Future<Map<String, dynamic>> getFavoriteSongs() async {
+    try {
+      return await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/users/favorites/songs',
+      );
+    } catch (e) {
+      _logger.e('Failed to get favorite songs: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's listening history
+  Future<Map<String, dynamic>> getListeningHistory() async {
+    try {
+      return await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/users/history',
+      );
+    } catch (e) {
+      _logger.e('Failed to get listening history: $e');
+      rethrow;
+    }
+  }
 }

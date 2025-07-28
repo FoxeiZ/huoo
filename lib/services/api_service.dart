@@ -83,6 +83,11 @@ class ApiService {
     );
   }
 
+  // Public method to get headers for custom HTTP requests (like multipart uploads)
+  Future<Map<String, String>> getHeaders({bool includeAuth = true}) async {
+    return await _getHeaders(includeAuth: includeAuth);
+  }
+
   Future<Map<String, dynamic>> _makeRequest({
     required String method,
     required String endpoint,

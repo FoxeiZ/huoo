@@ -1,5 +1,6 @@
 import 'package:huoo/services/user_api_service.dart';
 import 'package:huoo/services/api_service.dart';
+import 'package:huoo/models/api/api_models.dart';
 import 'package:logger/logger.dart';
 
 final log = Logger(
@@ -18,10 +19,10 @@ class UserRepository {
   factory UserRepository() => _instance;
   UserRepository._internal();
 
-  Future<UserProfile?> getUserProfile() async {
+  Future<UserApiModel?> getUserProfile() async {
     try {
       final response = await _userApiService.getUserProfile();
-      return UserProfile.fromJson(response);
+      return UserApiModel.fromJson(response);
     } on ApiException catch (e) {
       log.e('Failed to get user profile: ${e.message}');
       return null;
@@ -79,8 +80,59 @@ class UserRepository {
       return false;
     }
   }
+
+  /// Get detailed user statistics
+  Future<UserStatsApiModel?> getUserStats() async {
+    try {
+      final response = await _userApiService.getUserStats();
+      return UserStatsApiModel.fromJson(response);
+    } on ApiException catch (e) {
+      log.e('Failed to get user stats: ${e.message}');
+      return null;
+    } catch (e) {
+      log.e('Unexpected error getting user stats: $e');
+      return null;
+    }
+  }
+
+  /// Get user's favorite songs
+  Future<List<String>?> getFavoriteSongs() async {
+    try {
+      final response = await _userApiService.getFavoriteSongs();
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+        return List<String>.from(data['favorite_songs'] ?? []);
+      }
+      return [];
+    } on ApiException catch (e) {
+      log.e('Failed to get favorite songs: ${e.message}');
+      return null;
+    } catch (e) {
+      log.e('Unexpected error getting favorite songs: $e');
+      return null;
+    }
+  }
+
+  /// Get user's listening history
+  Future<List<Map<String, dynamic>>?> getListeningHistory() async {
+    try {
+      final response = await _userApiService.getListeningHistory();
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+        return List<Map<String, dynamic>>.from(data['listening_history'] ?? []);
+      }
+      return [];
+    } on ApiException catch (e) {
+      log.e('Failed to get listening history: ${e.message}');
+      return null;
+    } catch (e) {
+      log.e('Unexpected error getting listening history: $e');
+      return null;
+    }
+  }
 }
 
+// Deprecated - use UserApiModel instead
 class UserProfile {
   final String uid;
   final String? email;

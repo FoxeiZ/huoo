@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
@@ -5,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'package:huoo/bloc/audio_player_bloc.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/widgets/audio/seekbar.dart';
+import 'package:huoo/services/song_api_service.dart' as song_api_service;
 
 final log = Logger(
   printer: SimplePrinter(),
@@ -39,7 +41,6 @@ class _SleepTimerDialog extends StatefulWidget {
 }
 
 class _SleepTimerDialogState extends State<_SleepTimerDialog> {
-  // Timer duration in minutes (10 min to 5 hours = 300 minutes)
   double _timerMinutes = 30.0;
   static const double _minMinutes = 10.0;
   static const double _maxMinutes = 300.0; // 5 hours
@@ -48,7 +49,6 @@ class _SleepTimerDialogState extends State<_SleepTimerDialog> {
   @override
   void initState() {
     super.initState();
-    // Initialize text controller with default duration
     _updateTextController();
   }
 
@@ -488,34 +488,47 @@ class _AlbumArtSection extends StatelessWidget {
         return true;
       },
       builder: (context, state) {
+        final songMetadata =
+            state is AudioPlayerReady ? state.songMetadata : null;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Center(
-            child: Image.network(
-              "",
-              width: imageSize,
-              height: imageSize,
-              cacheHeight:
-                  (imageSize * MediaQuery.of(context).devicePixelRatio).round(),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                log.e("Error loading image: $error", stackTrace: stackTrace);
-                return Container(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: imageSize,
+                height: imageSize,
+                child: Image.network(
+                  songMetadata?.cover ?? '',
                   width: imageSize,
                   height: imageSize,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onErrorContainer.withAlpha(48),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.error,
-                    size: 50,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                );
-              },
+                  cacheHeight:
+                      (imageSize * MediaQuery.of(context).devicePixelRatio)
+                          .round(),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    log.e(
+                      "Error loading image: $error",
+                      stackTrace: stackTrace,
+                    );
+                    return Container(
+                      width: imageSize,
+                      height: imageSize,
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onErrorContainer.withAlpha(48),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.error,
+                        size: 50,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
         );
@@ -538,8 +551,6 @@ class _SongTextInfoSection extends StatefulWidget {
 }
 
 class _SongTextInfoSectionState extends State<_SongTextInfoSection> {
-  String artistName = "Unknown Artist";
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerBloc, AudioPlayerState>(
@@ -825,66 +836,130 @@ class _MainPlayerState extends State<MainPlayer> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final imageSize = screenSize.width < 400 ? screenSize.width * 0.7 : 300.0;
+    final imageSize = screenSize.width < 400 ? screenSize.width * 0.8 : 300.0;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return BlocBuilder<AudioPlayerBloc, AudioPlayerState>(
+      buildWhen: (previous, current) {
+        // Rebuild when song metadata changes for background update
+        if (previous is AudioPlayerReady && current is AudioPlayerReady) {
+          return previous.songMetadata != current.songMetadata;
+        }
+        return true;
+      },
+      builder: (context, state) {
+        final songMetadata =
+            state is AudioPlayerReady ? state.songMetadata : null;
+        final coverUrl = songMetadata?.cover;
+
+        return Scaffold(
+          body: Stack(
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  onPressed: () => _showBottomSheet(context),
-                  icon: const Icon(Icons.more_vert),
-                ),
-              ),
-
-              // Content section
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
+              // Blurred background
+              if (coverUrl != null && coverUrl.isNotEmpty)
+                Positioned.fill(
+                  child: Image.network(
+                    coverUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Theme.of(context).colorScheme.surface,
+                              Theme.of(
+                                context,
+                              ).colorScheme.surface.withValues(alpha: 0.8),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _AlbumArtSection(imageSize: imageSize),
-                            const SizedBox(height: 16),
-
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _SongTextInfoSection(
-                                  isFavorite: _isFavorite,
-                                  onFavoriteChanged: (value) {
-                                    setState(() {
-                                      _isFavorite = value;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
-                                const _PlayerControlsSection(),
-                              ],
-                            ),
-                          ],
+                      );
+                    },
+                  ),
+                ),
+              // Blur effect
+              if (coverUrl != null && coverUrl.isNotEmpty)
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                    child: Container(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ),
+              // Content
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          onPressed: () => _showBottomSheet(context),
+                          icon: const Icon(Icons.more_vert),
                         ),
                       ),
-                    );
-                  },
+
+                      // Content section
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              physics: const NeverScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _AlbumArtSection(imageSize: imageSize),
+                                    const SizedBox(height: 16),
+
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _SongTextInfoSection(
+                                          isFavorite: _isFavorite,
+                                          onFavoriteChanged: (value) async {
+                                            await song_api_service.SongApiService()
+                                                .toggleFavoriteSong(
+                                                  songMetadata!.apiId!,
+                                                )
+                                                .then((_) {
+                                                  setState(() {
+                                                    _isFavorite = value;
+                                                  });
+                                                });
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+
+                                        const _PlayerControlsSection(),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

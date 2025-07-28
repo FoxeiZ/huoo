@@ -1,5 +1,6 @@
 import 'package:logger/logger.dart';
 import 'package:huoo/services/api_service.dart';
+import 'package:huoo/models/api/api_models.dart';
 
 final Logger _logger = Logger(
   printer: SimplePrinter(),
@@ -16,16 +17,22 @@ class HomeApiService {
   factory HomeApiService() => _instance;
   HomeApiService._internal();
 
-  Future<Map<String, dynamic>> getHomeScreenData() async {
+  Future<HomeScreenData> getHomeScreenData() async {
     try {
-      return await _apiService.makeRequest(method: 'GET', endpoint: '/home');
+      final response = await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/home',
+      );
+      return HomeScreenData.fromJson(response);
     } catch (e) {
       _logger.e('Failed to get home screen data: $e');
       rethrow;
     }
   }
 
-  Future<List<dynamic>> getContinueListening({int limit = 6}) async {
+  Future<ContinueListeningResponse> getContinueListening({
+    int limit = 6,
+  }) async {
     try {
       final result = await _apiService.makeRequest(
         method: 'GET',
@@ -33,20 +40,14 @@ class HomeApiService {
         queryParams: {'limit': limit.toString()},
       );
 
-      // API now returns {items: [...], total_count: N}
-      if (result['items'] is List) {
-        return result['items'];
-      }
-
-      _logger.w('Expected items List but got ${result.runtimeType}: $result');
-      return <dynamic>[];
+      return ContinueListeningResponse.fromJson(result);
     } catch (e) {
       _logger.e('Failed to get continue listening data: $e');
       rethrow;
     }
   }
 
-  Future<List<dynamic>> getTopMixes({int limit = 4}) async {
+  Future<TopMixesResponse> getTopMixes({int limit = 4}) async {
     try {
       final result = await _apiService.makeRequest(
         method: 'GET',
@@ -54,20 +55,14 @@ class HomeApiService {
         queryParams: {'limit': limit.toString()},
       );
 
-      // API now returns {items: [...], total_count: N}
-      if (result['items'] is List) {
-        return result['items'];
-      }
-
-      _logger.w('Expected items List but got ${result.runtimeType}: $result');
-      return <dynamic>[];
+      return TopMixesResponse.fromJson(result);
     } catch (e) {
       _logger.e('Failed to get top mixes: $e');
       rethrow;
     }
   }
 
-  Future<List<dynamic>> getRecentListening({int limit = 6}) async {
+  Future<RecentListeningResponse> getRecentListening({int limit = 6}) async {
     try {
       final result = await _apiService.makeRequest(
         method: 'GET',
@@ -75,27 +70,38 @@ class HomeApiService {
         queryParams: {'limit': limit.toString()},
       );
 
-      // API now returns {items: [...], total_count: N}
-      if (result['items'] is List) {
-        return result['items'];
-      }
-
-      _logger.w('Expected items List but got ${result.runtimeType}: $result');
-      return <dynamic>[];
+      return RecentListeningResponse.fromJson(result);
     } catch (e) {
       _logger.e('Failed to get recent listening data: $e');
       rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> getUserStats() async {
+  Future<UserStats> getUserStats() async {
     try {
-      return await _apiService.makeRequest(
+      final result = await _apiService.makeRequest(
         method: 'GET',
         endpoint: '/home/stats',
       );
+
+      return UserStats.fromJson(result);
     } catch (e) {
       _logger.e('Failed to get user stats: $e');
+      rethrow;
+    }
+  }
+
+  Future<SongListResponse> getRecommendedSongs({int limit = 20}) async {
+    try {
+      final result = await _apiService.makeRequest(
+        method: 'GET',
+        endpoint: '/home/recommend',
+        queryParams: {'limit': limit.toString()},
+      );
+
+      return SongListResponse.fromJson(result);
+    } catch (e) {
+      _logger.e('Failed to get recommended songs: $e');
       rethrow;
     }
   }
