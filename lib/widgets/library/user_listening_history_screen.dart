@@ -74,7 +74,7 @@ class _ListeningHistoryScreenState extends State<ListeningHistoryScreen> {
                     Icon(
                       Icons.error_outline,
                       size: 80,
-                      color: Colors.red.withOpacity(0.7),
+                      color: Colors.red.withValues(alpha: 0.7),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -89,7 +89,7 @@ class _ListeningHistoryScreenState extends State<ListeningHistoryScreen> {
                     Text(
                       _errorMessage,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
@@ -114,7 +114,7 @@ class _ListeningHistoryScreenState extends State<ListeningHistoryScreen> {
                     Icon(
                       Icons.history,
                       size: 80,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -129,7 +129,7 @@ class _ListeningHistoryScreenState extends State<ListeningHistoryScreen> {
                     Text(
                       'Play some songs to see your history here',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 16,
                       ),
                       textAlign: TextAlign.center,

@@ -113,9 +113,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           _errorMessage = 'Unable to perform search. Please try again.';
         }
       });
-
-      // Log the full error for debugging
-      print('Search error: $e');
     }
   }
 
@@ -316,7 +313,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(

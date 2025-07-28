@@ -9,7 +9,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:huoo/services/lightweight_player_persistence.dart';
 import 'package:huoo/models/song.dart';
 import 'package:huoo/models/song_reference.dart';
-import 'package:huoo/services/song_api_service.dart' as SongApiService;
+import 'package:huoo/services/song_api_service.dart' as song_api_service;
 
 part 'audio_player_event.dart';
 part 'audio_player_state.dart';
@@ -621,7 +621,7 @@ class AudioPlayerBloc extends Bloc<AudioPlayerEvent, AudioPlayerState> {
         }
         await _emitStateFromPlayer(emit, playing: true);
         if (currentState.songMetadata?.source == AudioSourceEnum.api) {
-          await SongApiService.SongApiService().playSong(
+          await song_api_service.SongApiService().playSong(
             currentState.songMetadata!.apiId!,
           );
         }
